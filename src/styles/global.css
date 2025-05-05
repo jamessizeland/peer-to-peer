@@ -1,0 +1,28 @@
+:root {
+  font-family: Inter, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 18px;
+  line-height: 27px;
+  font-weight: 400;
+  box-sizing: border-box;
+
+  color: rgb(205, 202, 202);
+  background-color: rgb(26, 28, 38);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  font-weight: var(--font-weight);
+
+  color: var(--color);
+  background-color: var(--background-color);
+  touch-action: pan-x pan-y;       /* block pinch‐zoom & pinch‐rotate */
+  overscroll-behavior: none;       /* block edge‐swipe navigations */
+}
