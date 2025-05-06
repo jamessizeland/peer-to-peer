@@ -1,51 +1,10 @@
-use anyhow::{anyhow, Result};
-use iroh::endpoint::RemoteInfo;
-use n0_future::{
-    boxed::BoxStream,
-    task::{self, AbortOnDropHandle},
-    StreamExt,
-};
-use tauri::Emitter as _;
-
 use crate::{
-    chat::{channel::TicketOpts, ChatNode, ChatTicket, Event, NodeId},
-    state::{ActiveChannel, AppContext},
+    chat::{channel::TicketOpts, ChatNode, ChatTicket, NodeId},
+    state::{spawn_event_listener, ActiveChannel, AppContext},
     // utils::get_store,
 };
-
-/// Spawns a background task to listen for chat events and emit them to the frontend.
-fn spawn_event_listener(
-    app: tauri::AppHandle,
-    mut receiver: BoxStream<Result<Event>>,
-) -> AbortOnDropHandle<()> {
-    AbortOnDropHandle::new(task::spawn(async move {
-        loop {
-            match receiver.next().await {
-                Some(Ok(event)) => {
-                    if let Err(e) = app.emit("chat-event", &event) {
-                        tracing::error!("Failed to emit event to frontend: {}", e);
-                    }
-                }
-                Some(Err(e)) => {
-                    tracing::error!("Error receiving chat event: {}", e);
-                    // Optionally emit an error event to the frontend
-                    let _ = app.emit(
-                        "chat-error",
-                        Event::Errorred {
-                            message: e.to_string(),
-                        },
-                    );
-                    break; // Stop listening on error
-                }
-                None => {
-                    tracing::info!("Chat event stream ended.");
-                    let _ = app.emit("chat-event", Event::Lagged); // Or a custom "Disconnected" event
-                    break; // Stop listening when the stream ends
-                }
-            }
-        }
-    }))
-}
+use anyhow::anyhow;
+use iroh::endpoint::RemoteInfo;
 
 #[tauri::command]
 /// Initialize the Application Context from disk.
@@ -114,20 +73,11 @@ pub async fn create_room(
     let receiver_handle = spawn_event_listener(app.clone(), receiver);
 
     // Store the active channel info
-    *state.active_channel.lock().await = Some(ActiveChannel {
-        inner: domain_channel, // Store the whole Channel object
-        receiver_handle,
-    });
+    *state.active_channel.lock().await = Some(ActiveChannel::new(domain_channel, receiver_handle));
 
     // Get the topic_id from the established channel for logging
-    let topic_id_str = state
-        .active_channel
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
-        .inner
-        .id();
+    let topic_id_str = state.get_topic_id().await?;
+
     tracing::info!(
         "Active channel SET in create_room for topic: {}",
         topic_id_str
@@ -142,14 +92,8 @@ pub async fn create_room(
         include_bootstrap: true,
         include_neighbors: true,
     };
-    let ticket_token = state
-        .active_channel
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
-        .inner
-        .ticket(ticket_opts)?;
+    let ticket_token = state.generate_ticket(ticket_opts).await?;
+
     *state.latest_ticket.lock().await = Some(ticket_token.clone());
     Ok(ticket_token)
 }
@@ -188,20 +132,11 @@ pub async fn join_room(
     let receiver_handle = spawn_event_listener(app.clone(), receiver);
 
     // Store the active channel info
-    *state.active_channel.lock().await = Some(ActiveChannel {
-        inner: domain_channel, // Store the whole Channel object
-        receiver_handle,
-    });
+    *state.active_channel.lock().await = Some(ActiveChannel::new(domain_channel, receiver_handle));
 
     // Get the topic_id from the established channel for logging
-    let topic_id_str = state
-        .active_channel
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
-        .inner
-        .id();
+    let topic_id_str = state.get_topic_id().await?;
+
     tracing::info!(
         "Active channel SET in join_room for topic: {}",
         topic_id_str
@@ -218,24 +153,9 @@ pub async fn send_message(
     state: tauri::State<'_, AppContext>,
     _app: tauri::AppHandle, // Marked as unused, can be removed if not needed by Tauri
 ) -> tauri::Result<()> {
-    let active_channel_guard = state.active_channel.lock().await;
-    let is_some = active_channel_guard.is_some();
-    tracing::info!(
-        "send_message: active_channel is Some? {}. Topic ID if Some: {:?}",
-        is_some,
-        active_channel_guard.as_ref().map(|c| c.inner.id())
-    );
-    if let Some(active_state) = active_channel_guard.as_ref() {
-        active_state
-            .inner // This is &chat::channel::Channel
-            .sender() // This clones the ChatSender from the channel
-            .send(message)
-            .await
-            .map_err(|e| anyhow!("Failed to send message: {}", e))?;
-        Ok(())
-    } else {
-        Err(anyhow!("Not currently in a room").into())
-    }
+    let sender = state.get_sender().await?;
+    sender.send(message).await?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -244,18 +164,10 @@ pub async fn set_nickname(
     nickname: String,
     state: tauri::State<'_, AppContext>,
 ) -> tauri::Result<()> {
-    let mut active_channel_guard = state.active_channel.lock().await;
-    if let Some(active_state) = active_channel_guard.as_mut() {
-        // Assuming ChatSender::set_nickname works on a cloned sender
-        // (e.g., it sends a command over an internal channel).
-        // If ChatSender::set_nickname needs &mut self on the *original* sender,
-        // chat::channel::Channel would need a method like sender_mut() or a direct set_nickname method.
-        active_state.inner.sender().set_nickname(nickname.clone());
-        *state.nickname.lock().await = Some(nickname);
-        Ok(())
-    } else {
-        Err(anyhow!("Not currently in a room").into())
-    }
+    tracing::info!("Nickname set to: {}", &nickname);
+    state.nickname.lock().await.replace(nickname.clone());
+    state.set_nickname(nickname).await?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -280,22 +192,8 @@ pub async fn leave_room(
     state: tauri::State<'_, AppContext>,
     _app: tauri::AppHandle,
 ) -> tauri::Result<()> {
-    tracing::info!(
-        "leave_room called. Current topic before leaving: {:?}",
-        state
-            .active_channel
-            .lock()
-            .await
-            .as_ref()
-            .map(|c| c.inner.id())
-    );
-    let mut active_channel_guard = state.active_channel.lock().await;
-    if let Some(active_state) = active_channel_guard.take() {
-        active_state.receiver_handle.abort(); // Aborts the spawned listener task
-        tracing::info!("Left room: {}", active_state.inner.id()); // Log the ID from the inner channel
-    } else {
-        tracing::debug!("Leave room called, but not in a room.");
-    }
+    let id = state.drop_channel().await?;
+    tracing::info!("Left room: {}", id);
     Ok(())
 }
 
