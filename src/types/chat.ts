@@ -33,10 +33,16 @@ export type LaggedEvent = {
   type: "lagged";
 };
 
+export type ErrorEvent = {
+  type: "errored";
+  message: string;
+};
+
 export type ChatEvent =
   | JoinedEvent
   | MessageEvent
   | NeighborUpEvent
   | NeighborDownEvent
   | PresenceEvent
-  | LaggedEvent;
+  | LaggedEvent
+  | ErrorEvent;

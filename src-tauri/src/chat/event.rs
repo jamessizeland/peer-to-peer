@@ -34,6 +34,10 @@ pub enum Event {
         node_id: NodeId,
     },
     Lagged,
+    #[serde(rename_all = "camelCase")]
+    Errorred {
+        message: String,
+    },
 }
 
 impl TryFrom<iroh_gossip::net::Event> for Event {
