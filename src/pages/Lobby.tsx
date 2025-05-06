@@ -57,6 +57,28 @@ export function LobbyPage() {
         </button>
       </form>
       {submitting && <p>Submitting...</p>}
+      <p className="p-2 m-4 text-sm border rounded-md border-accent max-h-fit">
+        This is a peer to peer messaging app using the{" "}
+        <a
+          className="link link-secondary"
+          href="https://www.iroh.computer/proto/iroh-gossip"
+        >
+          Iroh Gossip Protocol
+        </a>{" "}
+        to send messages between peers sharing a Room. <br />
+        <br />
+        Messages are sent as events to all connected peers directly, are
+        encrypted as standard and are not persisted anywhere. <br />
+        <br />
+        This is a proof of concept based heavily on the{" "}
+        <a
+          className="link link-secondary"
+          href="https://github.com/n0-computer/iroh-examples/tree/main/browser-chat"
+        >
+          Iroh chat example
+        </a>{" "}
+        and modified for a Tauri App.
+      </p>
       <Footer />
     </div>
   );

@@ -1,46 +1,50 @@
+interface BaseEvent {
+  type: string;
+}
+
 // export types used in chat-browser, for now they are defined manually here.
-export type JoinedEvent = {
+export interface JoinedEvent extends BaseEvent {
   type: "joined";
   neighbors: string[];
-};
+}
 
-export type MessageEvent = {
+export interface MessageReceivedEvent extends BaseEvent {
   type: "messageReceived";
   from: string;
   text: string;
   nickname: string;
   sentTimestamp: number;
-};
+}
 
-export type PresenceEvent = {
+export interface PresenceEvent extends BaseEvent {
   type: "presence";
   from: string;
   nickname: string;
   sentTimestamp: number;
-};
+}
 
-export type NeighborUpEvent = {
+export interface NeighborUpEvent extends BaseEvent {
   type: "neighborUp";
   nodeId: string;
-};
+}
 
-export type NeighborDownEvent = {
+export interface NeighborDownEvent extends BaseEvent {
   type: "neighborDown";
   nodeId: string;
-};
+}
 
-export type LaggedEvent = {
+export interface LaggedEvent extends BaseEvent {
   type: "lagged";
-};
+}
 
-export type ErrorEvent = {
+export interface ErrorEvent extends BaseEvent {
   type: "errored";
   message: string;
-};
+}
 
 export type ChatEvent =
   | JoinedEvent
-  | MessageEvent
+  | MessageReceivedEvent
   | NeighborUpEvent
   | NeighborDownEvent
   | PresenceEvent
