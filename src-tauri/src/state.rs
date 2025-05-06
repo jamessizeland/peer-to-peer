@@ -3,14 +3,14 @@ use tokio::sync::Mutex as TokioMutex;
 
 use n0_future::task::AbortOnDropHandle;
 
-use crate::chat::{ChatNode, ChatSender};
+use crate::chat::{self, ChatNode};
 
 /// Holds information about the currently active chat channel.
 pub struct ActiveChannel {
-    pub sender: ChatSender,
+    pub inner: chat::channel::Channel,
     // Handle to the background task processing incoming messages. Dropping this stops the task.
     pub receiver_handle: AbortOnDropHandle<()>,
-    pub topic_id: iroh_gossip::proto::TopicId,
+    // pub topic_id: iroh_gossip::proto::TopicId,
 }
 
 /// Holds the application's runtime context, including the iroh client,

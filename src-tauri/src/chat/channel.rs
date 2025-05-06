@@ -33,7 +33,7 @@ pub struct Channel {
     bootstrap: BTreeSet<NodeId>,
     neighbors: Arc<Mutex<BTreeSet<NodeId>>>,
     sender: ChatSender,
-    receiver: ChatReceiver,
+    receiver: Option<ChatReceiver>,
 }
 
 impl Channel {
@@ -41,9 +41,8 @@ impl Channel {
         self.sender.clone()
     }
 
-    pub fn receiver(&mut self) -> ChatReceiver {
-        // self.receiver.clone()
-        todo!("how to return reference to receiver?")
+    pub fn take_receiver(&mut self) -> Option<ChatReceiver> {
+        self.receiver.take()
     }
 
     pub fn ticket(&self, opts: TicketOpts) -> anyhow::Result<String> {
@@ -115,7 +114,7 @@ impl ChatNode {
             neighbors,
             me: self.node_id(),
             sender,
-            receiver,
+            receiver: Some(receiver),
         };
         Ok(topic)
     }

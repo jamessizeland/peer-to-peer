@@ -1,4 +1,4 @@
-mod channel;
+pub mod channel;
 mod event;
 mod message;
 mod sender;
@@ -23,7 +23,6 @@ pub use ticket::ChatTicket;
 use tokio::sync::Notify;
 use tracing::{debug, info, warn};
 
-pub const TOPIC_PREFIX: &str = "iroh-example-chat/0:";
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(5);
 
 pub struct ChatNode {
