@@ -29,7 +29,12 @@ fn spawn_event_listener(
                 Some(Err(e)) => {
                     tracing::error!("Error receiving chat event: {}", e);
                     // Optionally emit an error event to the frontend
-                    let _ = app.emit("chat-error", format!("Receive error: {}", e));
+                    let _ = app.emit(
+                        "chat-error",
+                        Event::Errorred {
+                            message: e.to_string(),
+                        },
+                    );
                     break; // Stop listening on error
                 }
                 None => {
@@ -106,8 +111,9 @@ pub async fn create_room(
     tracing::info!("Created and joined room: {}", ticket.topic_id);
 
     // Return the serialized ticket so it can be shared
-    *state.latest_ticket.lock().await = Some(ticket.serialize());
-    Ok(ticket.serialize())
+    let ticket_token = ticket.serialize();
+    *state.latest_ticket.lock().await = Some(ticket_token.clone());
+    Ok(ticket_token)
 }
 
 #[tauri::command]
@@ -126,11 +132,13 @@ pub async fn join_room(
     // Leave any existing room first
     leave_room(state.clone(), app.clone()).await?;
 
-    let ticket = ChatTicket::deserialize(&ticket)?;
+    tracing::info!("deserializing ticket token: {}", ticket);
+    let chat_ticket = ChatTicket::deserialize(&ticket)?;
+    *state.latest_ticket.lock().await = Some(ticket.clone());
 
     // Join the topic
     let (sender, receiver) = node
-        .join(&ticket, nickname.clone())
+        .join(&chat_ticket, nickname.clone())
         .map_err(|e| anyhow!("Failed to join topic: {}", e))?;
 
     // Spawn the event listener task
@@ -140,11 +148,11 @@ pub async fn join_room(
     *state.active_channel.lock().await = Some(ActiveChannel {
         sender,
         receiver_handle,
-        topic_id: ticket.topic_id,
+        topic_id: chat_ticket.topic_id,
     });
     *state.nickname.lock().await = Some(nickname);
 
-    tracing::info!("Joined room: {}", ticket.topic_id);
+    tracing::info!("Joined room: {}", chat_ticket.topic_id);
     Ok(())
 }
 
@@ -192,6 +200,15 @@ pub async fn get_nickname(state: tauri::State<'_, AppContext>) -> tauri::Result<
 }
 
 #[tauri::command]
+/// Get the stored room ticket string
+pub async fn get_latest_ticket(
+    state: tauri::State<'_, AppContext>,
+) -> tauri::Result<Option<String>> {
+    let ticket_guard = state.latest_ticket.lock().await;
+    Ok(ticket_guard.clone())
+}
+
+#[tauri::command]
 /// Leave the currently joined room
 pub async fn leave_room(
     state: tauri::State<'_, AppContext>,
@@ -199,13 +216,8 @@ pub async fn leave_room(
 ) -> tauri::Result<()> {
     let mut active_channel_guard = state.active_channel.lock().await;
     if let Some(channel) = active_channel_guard.take() {
-        // Dropping the ActiveChannel struct automatically drops the AbortOnDropHandle
-        // for the receiver task, stopping it.
-        // It also drops the ChatSender, which holds an Arc to the presence task handle, stopping that too.
-        // TODO: Verify if iroh-gossip requires explicit unsubscribe or if dropping sender/receiver is enough.
-        // For now, assume dropping is sufficient cleanup for the gossip topic participation.
+        channel.receiver_handle.abort();
         tracing::info!("Left room: {}", channel.topic_id);
-        *state.nickname.lock().await = None; // Clear nickname when leaving
     } else {
         tracing::debug!("Leave room called, but not in a room.");
     }
@@ -224,9 +236,7 @@ pub async fn disconnect(
     // Then, shut down the node
     let mut node_guard = state.node.lock().await;
     if let Some(node) = node_guard.take() {
-        // node.shutdown() is async, but we're in a sync mutex guard.
-        // We need to drop the guard before awaiting.
-        drop(node_guard);
+        drop(node_guard); // <- is this needed?
         node.shutdown().await;
         tracing::info!("Iroh node shut down.");
     } else {

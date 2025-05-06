@@ -8,7 +8,12 @@ mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .pretty()
+        .with_ansi(false)
+        .init();
+
     tracing::info!("Starting app");
 
     tauri::Builder::default()
@@ -26,6 +31,7 @@ pub fn run() {
             ipc::join_room,
             ipc::send_message,
             ipc::leave_room,
+            ipc::get_latest_ticket,
             ipc::disconnect,
             ipc::get_peers,
             ipc::get_node_id,

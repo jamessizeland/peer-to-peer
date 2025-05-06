@@ -16,7 +16,8 @@ export async function initContext(): Promise<void> {
  an out-of-band Join Code to others to connect. */
 export async function createRoom(nickname: string): Promise<string> {
   try {
-    return await invoke<string>("create_room", { nickname });
+    let ticket = await invoke<string>("create_room", { nickname });
+    return ticket;
   } catch (e) {
     notifyError(`Failed to create room: ${e}`, "RoomCreateError");
     return "";
@@ -34,6 +35,16 @@ export async function joinRoom(
   } catch (e) {
     notifyError(`Failed to join room: ${e}`, "RoomJoinError");
     return false;
+  }
+}
+
+/** Return the ticket string for the latest created room. */
+export async function getLatestTicket(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("get_latest_ticket");
+  } catch (e) {
+    notifyError(`Failed to get latest ticket: ${e}`, "TicketGetError");
+    return null;
   }
 }
 
