@@ -1,3 +1,4 @@
+import Footer from "components/Layout/footer";
 import { useState, useEffect } from "react";
 import { createRoom, joinRoom, getNickname } from "services/ipc";
 
@@ -23,7 +24,7 @@ export function LobbyPage() {
           e.preventDefault();
           if (nickname) {
             if (ticket) {
-              if (await joinRoom(nickname, ticket)) {
+              if (await joinRoom(ticket, nickname)) {
                 window.location.href = "/chat";
               }
               setSubmitting(false);
@@ -40,7 +41,7 @@ export function LobbyPage() {
           className="input input-accent"
           type="text"
           placeholder="Nickname"
-          value={nickname}
+          defaultValue={nickname}
           onChange={(e) => setNickname(e.target.value)}
           required // Optional: makes the browser enforce that the field is filled
         />
@@ -48,7 +49,7 @@ export function LobbyPage() {
           className="input input-accent"
           type="text"
           placeholder="Room ID"
-          value={ticket}
+          defaultValue={ticket}
           onChange={(e) => setTicket(e.target.value)}
         />
         <button disabled={!nickname} type="submit" className="btn btn-accent">
@@ -56,6 +57,7 @@ export function LobbyPage() {
         </button>
       </form>
       {submitting && <p>Submitting...</p>}
+      <Footer />
     </div>
   );
 }
