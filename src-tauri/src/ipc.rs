@@ -112,7 +112,7 @@ pub async fn create_room(
 #[tauri::command]
 /// Join an existing room
 pub async fn join_room(
-    ticket: ChatTicket,
+    ticket: String,
     nickname: String,
     state: tauri::State<'_, AppContext>,
     app: tauri::AppHandle,
@@ -124,6 +124,8 @@ pub async fn join_room(
 
     // Leave any existing room first
     leave_room(state.clone(), app.clone()).await?;
+
+    let ticket = ChatTicket::deserialize(&ticket)?;
 
     // Join the topic
     let (sender, receiver) = node

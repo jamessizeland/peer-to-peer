@@ -14,11 +14,12 @@ export async function initContext(): Promise<void> {
 
 /** Create a new room and return the information required to send
  an out-of-band Join Code to others to connect. */
-export async function createRoom(nickname: string): Promise<void> {
+export async function createRoom(nickname: string): Promise<string> {
   try {
-    await invoke("create_room", { nickname });
+    return await invoke<string>("create_room", { nickname });
   } catch (e) {
     notifyError(`Failed to create room: ${e}`, "RoomCreateError");
+    return "";
   }
 }
 
@@ -77,5 +78,15 @@ export async function getPeers(): Promise<PeerInfo[]> {
   } catch (e) {
     notifyError(`Failed to get peers: ${e}`, "PeersGetError");
     return [];
+  }
+}
+
+/** Return the node id of this node */
+export async function getNodeId(): Promise<string> {
+  try {
+    return await invoke<string>("get_node_id");
+  } catch (e) {
+    notifyError(`Failed to get node id: ${e}`, "NodeIdGetError");
+    return "";
   }
 }
