@@ -27,11 +27,13 @@ export async function createRoom(nickname: string): Promise<string> {
 export async function joinRoom(
   ticket: string,
   nickname: string
-): Promise<void> {
+): Promise<boolean> {
   try {
     await invoke("join_room", { ticket, nickname });
+    return true;
   } catch (e) {
     notifyError(`Failed to join room: ${e}`, "RoomJoinError");
+    return false;
   }
 }
 
@@ -50,6 +52,16 @@ export async function setNickname(nickname: string): Promise<void> {
     await invoke("set_nickname", { nickname });
   } catch (e) {
     notifyError(`Failed to set nickname: ${e}`, "NicknameSetError");
+  }
+}
+
+/** Get the stored nickname for this node. */
+export async function getNickname(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("get_nickname");
+  } catch (e) {
+    notifyError(`Failed to get nickname: ${e}`, "NicknameGetError");
+    return null;
   }
 }
 

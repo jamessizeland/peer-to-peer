@@ -19,7 +19,8 @@ pub struct AppContext {
     // The iroh client instance used for all interactions. Option<> because it's initialized async.
     pub node: Arc<TokioMutex<Option<ChatNode>>>,
     pub nickname: Arc<TokioMutex<Option<String>>>, // Nickname needs to be shared
-    pub active_channel: Arc<TokioMutex<Option<ActiveChannel>>>, // Use Tokio Mutex for async locking
+    pub active_channel: Arc<TokioMutex<Option<ActiveChannel>>>,
+    pub latest_ticket: Arc<TokioMutex<Option<String>>>,
 }
 
 impl AppContext {
@@ -29,6 +30,7 @@ impl AppContext {
             node: Arc::new(TokioMutex::new(None)),
             nickname: Arc::new(TokioMutex::new(None)),
             active_channel: Arc::new(TokioMutex::new(None)),
+            latest_ticket: Arc::new(TokioMutex::new(None)),
         }
     }
 }

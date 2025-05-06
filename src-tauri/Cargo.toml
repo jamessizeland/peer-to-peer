@@ -29,6 +29,7 @@ tokio-util = { version = "0.7.15" }
 # debugging
 tracing = "0.1"
 anyhow = "^1.0.96"
+tracing-subscriber = "0.3.19"
 
 # cryptography
 rand = "0.8.5" # version constrained by iroh

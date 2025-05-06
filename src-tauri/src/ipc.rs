@@ -106,6 +106,7 @@ pub async fn create_room(
     tracing::info!("Created and joined room: {}", ticket.topic_id);
 
     // Return the serialized ticket so it can be shared
+    *state.latest_ticket.lock().await = Some(ticket.serialize());
     Ok(ticket.serialize())
 }
 
@@ -181,6 +182,13 @@ pub async fn set_nickname(
     } else {
         Err(anyhow!("Not currently in a room").into())
     }
+}
+
+#[tauri::command]
+/// Get the stored nickname for this node.
+pub async fn get_nickname(state: tauri::State<'_, AppContext>) -> tauri::Result<Option<String>> {
+    let nickname_guard = state.nickname.lock().await;
+    Ok(nickname_guard.clone())
 }
 
 #[tauri::command]
