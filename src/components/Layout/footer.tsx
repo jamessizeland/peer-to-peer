@@ -7,7 +7,7 @@ import pjson from "../../../package.json";
  */
 const Footer = () => {
   return (
-    <div className="fixed bottom-0 w-full flex justify-center p-2 items-center">
+    <div className="w-full flex justify-center p-2 items-center">
       <a
         target="_blank"
         href="https://github.com/jamessizeland/peer-to-peer"

@@ -57,9 +57,10 @@ export function LobbyPage() {
         </button>
       </form>
       {submitting && <p>Submitting...</p>}
-      <p className="p-2 m-4 text-sm border rounded-md border-accent max-h-fit">
+      <p className="backdrop-opacity-100 p-2 m-4 text-sm border rounded-md border-accent max-h-fit">
         This is a peer to peer messaging app using the{" "}
         <a
+          target="_blank"
           className="link link-secondary"
           href="https://www.iroh.computer/proto/iroh-gossip"
         >
@@ -72,6 +73,7 @@ export function LobbyPage() {
         <br />
         This is a proof of concept based heavily on the{" "}
         <a
+          target="_blank"
           className="link link-secondary"
           href="https://github.com/n0-computer/iroh-examples/tree/main/browser-chat"
         >
@@ -79,6 +81,7 @@ export function LobbyPage() {
         </a>{" "}
         and modified for a Tauri App.
       </p>
+      <div className="h-full"></div>
       <Footer />
     </div>
   );

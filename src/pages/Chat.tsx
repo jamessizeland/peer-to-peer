@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getLatestTicket } from "services/ipc";
+import { getLatestTicket, getPeers } from "services/ipc";
 import { ChatEvent } from "types/chat";
 import { listen } from "@tauri-apps/api/event";
 import { MessageReceivedEvent } from "types/chat";
@@ -7,13 +7,14 @@ import TopBar from "components/elements/topbar";
 import TicketViewer from "components/elements/ticket";
 import EventLogModal from "components/elements/eventLog";
 import Messages from "components/elements/messages";
+import { notify } from "services/notifications";
+import { PeerInfo } from "types";
 
 export function ChatPage() {
   const [ticket, setTicket] = useState<string>();
-  // const [peers, setPeers] = useState<PeerInfo[]>([]);
   const [messages, setMessages] = useState<MessageReceivedEvent[]>([]);
   const [eventLog, setEventLog] = useState<ChatEvent[]>([]);
-  const [neighbours, setNeighbours] = useState<String[]>([]);
+  const [neighbours, setNeighbours] = useState<PeerInfo[]>([]);
   const [openLog, setOpenLog] = useState<boolean>(false);
 
   useEffect(() => {
@@ -21,11 +22,6 @@ export function ChatPage() {
       console.log(ticket);
       if (ticket) setTicket(ticket);
     });
-
-    // getPeers().then((peers) => {
-    //   console.log(peers);
-    //   // if (peers) setPeers(peers);
-    // });
   }, []);
 
   useEffect(() => {
@@ -38,8 +34,13 @@ export function ChatPage() {
           setMessages((messages) => [...messages, message]);
           break;
         case "joined":
-          const joined = event.payload;
-          setNeighbours(joined.neighbors);
+          const peer = event.payload;
+          peer.neighbors.forEach((n) => {
+            notify(`${n} joined the room`);
+          });
+          getPeers().then((peers) => {
+            setNeighbours(peers);
+          });
           break;
       }
     });

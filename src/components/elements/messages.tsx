@@ -81,7 +81,7 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
         from: myNodeId,
         text: messageToSend,
         nickname: myNickname,
-        sentTimestamp: Date.now(),
+        sentTimestamp: Date.now() * 1000,
         isMine: true,
         displayId: `local-${Date.now()}`, // Unique ID for local message
       };
@@ -120,7 +120,7 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
                   </span>
                 )}
                 <time className="text-xs opacity-50">
-                  {new Date(message.sentTimestamp).toLocaleTimeString()}
+                  {new Date(message.sentTimestamp / 1000).toLocaleString()}
                 </time>
               </div>
               <div className="chat-bubble">{message.text}</div>
