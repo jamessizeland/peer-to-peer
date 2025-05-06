@@ -1,8 +1,12 @@
-use crate::chat::{self, channel::TicketOpts, ChatNode, ChatSender, Event};
+use crate::chat::{
+    self,
+    channel::{Channel, TicketOpts},
+    ChatNode, ChatSender, Event,
+};
 use anyhow::anyhow;
 use n0_future::{task::AbortOnDropHandle, StreamExt as _};
 use std::sync::Arc;
-use tauri::Emitter as _;
+use tauri::{AppHandle, Emitter as _};
 use tokio::sync::Mutex as TokioMutex;
 
 /// Holds information about the currently active chat channel.
@@ -26,7 +30,7 @@ pub struct AppContext {
     // The iroh client instance used for all interactions. Option<> because it's initialized async.
     pub node: Arc<TokioMutex<Option<ChatNode>>>,
     pub nickname: Arc<TokioMutex<Option<String>>>, // Nickname needs to be shared
-    pub active_channel: Arc<TokioMutex<Option<ActiveChannel>>>,
+    active_channel: Arc<TokioMutex<Option<ActiveChannel>>>,
     pub latest_ticket: Arc<TokioMutex<Option<String>>>,
 }
 
@@ -44,21 +48,21 @@ impl AppContext {
     pub async fn get_topic_id(&self) -> anyhow::Result<String> {
         match self.active_channel.lock().await.as_ref() {
             Some(channel) => Ok(channel.inner.id()),
-            None => Err(anyhow!("No active channel.")),
+            None => Err(anyhow!("Could not get Topic ID. No active channel.")),
         }
     }
     /// Generate a new ticket token string.
     pub async fn generate_ticket(&self, options: TicketOpts) -> anyhow::Result<String> {
         match self.active_channel.lock().await.as_ref() {
             Some(channel) => channel.inner.ticket(options),
-            None => Err(anyhow!("No active channel.")),
+            None => Err(anyhow!("Could not generate ticket. No active channel.")),
         }
     }
     /// Send a message on the active channel. Returns active topic ID.
     pub async fn get_sender(&self) -> anyhow::Result<ChatSender> {
         match self.active_channel.lock().await.as_ref() {
             Some(channel) => Ok(channel.inner.sender()),
-            None => Err(anyhow!("No active channel.")),
+            None => Err(anyhow!("Could not get sender. No active channel.")),
         }
     }
     /// Set the nickname of the active node.
@@ -68,23 +72,42 @@ impl AppContext {
                 channel.inner.sender().set_nickname(nickname);
                 Ok(())
             }
-            None => Err(anyhow!("No active channel.")),
+            None => Err(anyhow!("Could not set nickname. No active channel.")),
         }
     }
     /// Close our connection to this room.  Returns deactivated topic ID.
-    pub async fn drop_channel(&self) -> anyhow::Result<String> {
+    pub async fn drop_channel(&self) -> anyhow::Result<Option<String>> {
         match self.active_channel.lock().await.take() {
             Some(channel) => {
                 channel.receiver_handle.abort();
-                Ok(channel.inner.id())
+                Ok(Some(channel.inner.id()))
             }
-            None => Err(anyhow!("No active channel.")),
+            None => Ok(None),
         }
+    }
+    pub async fn start_channel(
+        &self,
+        domain_channel: Channel,
+        app_handle: AppHandle,
+        receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
+    ) -> anyhow::Result<String> {
+        // Spawn the event listener task
+        let receiver_handle = spawn_event_listener(app_handle, receiver);
+        // Store the active channel info
+        *self.active_channel.lock().await =
+            Some(ActiveChannel::new(domain_channel, receiver_handle));
+        // Get the topic_id from the established channel for logging
+        let topic_id_str = self.get_topic_id().await?;
+        tracing::info!(
+            "Active channel SET in join_room for topic: {}",
+            topic_id_str
+        );
+        Ok(topic_id_str)
     }
 }
 
 /// Spawns a background task to listen for chat events and emit them to the frontend.
-pub fn spawn_event_listener(
+fn spawn_event_listener(
     app: tauri::AppHandle,
     mut receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
 ) -> AbortOnDropHandle<()> {

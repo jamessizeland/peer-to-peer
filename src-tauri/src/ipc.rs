@@ -1,6 +1,6 @@
 use crate::{
     chat::{channel::TicketOpts, ChatNode, ChatTicket, NodeId},
-    state::{spawn_event_listener, ActiveChannel, AppContext},
+    state::AppContext,
     // utils::get_store,
 };
 use anyhow::anyhow;
@@ -33,7 +33,7 @@ pub async fn init_context(
     // Unlock node_guard as we don't need it for the rest of the state mutations.
     drop(node_guard);
     *state.nickname.lock().await = None; // Reset nickname on init
-    *state.active_channel.lock().await = None; // Clear any previous channel state
+    state.drop_channel().await?; // Reset active channel on init
 
     tracing::info!("Iroh node initialized.");
     Ok(())
@@ -69,19 +69,12 @@ pub async fn create_room(
         .take_receiver()
         .ok_or_else(|| anyhow!("Receiver already taken from channel object"))?;
 
-    // Spawn the event listener task
-    let receiver_handle = spawn_event_listener(app.clone(), receiver);
-
     // Store the active channel info
-    *state.active_channel.lock().await = Some(ActiveChannel::new(domain_channel, receiver_handle));
+    state.start_channel(domain_channel, app, receiver).await?;
 
     // Get the topic_id from the established channel for logging
     let topic_id_str = state.get_topic_id().await?;
 
-    tracing::info!(
-        "Active channel SET in create_room for topic: {}",
-        topic_id_str
-    );
     *state.nickname.lock().await = Some(nickname);
 
     tracing::info!("Created and joined room: {}", topic_id_str);
@@ -128,11 +121,8 @@ pub async fn join_room(
         .take_receiver()
         .ok_or_else(|| anyhow!("Receiver already taken from channel object"))?;
 
-    // Spawn the event listener task
-    let receiver_handle = spawn_event_listener(app.clone(), receiver);
-
     // Store the active channel info
-    *state.active_channel.lock().await = Some(ActiveChannel::new(domain_channel, receiver_handle));
+    state.start_channel(domain_channel, app, receiver).await?;
 
     // Get the topic_id from the established channel for logging
     let topic_id_str = state.get_topic_id().await?;
@@ -192,8 +182,9 @@ pub async fn leave_room(
     state: tauri::State<'_, AppContext>,
     _app: tauri::AppHandle,
 ) -> tauri::Result<()> {
-    let id = state.drop_channel().await?;
-    tracing::info!("Left room: {}", id);
+    if let Some(id) = state.drop_channel().await? {
+        tracing::info!("Left room: {}", id);
+    };
     Ok(())
 }
 
