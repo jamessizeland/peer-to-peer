@@ -5,7 +5,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
 const TicketViewer: React.FC = () => {
   return (
-    <div className="flex flex-row items-center space-x-2 max-w-screen">
+    <div className="flex flex-row space-x-2 max-w-screen">
       <button
         className="btn btn-accent"
         onClick={async () => {

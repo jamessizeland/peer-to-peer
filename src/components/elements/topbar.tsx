@@ -9,7 +9,7 @@ const TopBar: React.FC<{
   neighbours: PeerInfo[];
 }> = ({ openEventLog, neighbours }) => {
   return (
-    <div className="w-screen h-10 text-white flex justify-between">
+    <div className="w-screen flex justify-between p-1">
       <button
         type="button"
         className="text-2xl w-15 btn btn-outline btn-accent"

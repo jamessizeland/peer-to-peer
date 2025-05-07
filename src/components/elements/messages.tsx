@@ -32,8 +32,6 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
     []
   );
 
-  const messagesEndRef = useRef<null | HTMLDivElement>(null);
-
   // Fetch current user's nodeId and nickname on mount
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -65,11 +63,6 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
     allMessages.sort((a, b) => a.sentTimestamp - b.sentTimestamp);
     setDisplayedMessages(allMessages);
   }, [propMessages, localSentMessages]);
-
-  // Scroll to bottom when displayedMessages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayedMessages]);
 
   const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,30 +99,8 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <div className="flex-grow p-2 space-y-2 overflow-y-auto">
-        {displayedMessages.map((message) => {
-          const chatAlignment = message.isMine ? "chat-end" : "chat-start";
-
-          return (
-            <div key={message.displayId} className={`chat ${chatAlignment}`}>
-              <div className="chat-header">
-                {!message.isMine && (
-                  <span className="mr-1 text-sm font-semibold">
-                    {message.nickname}
-                  </span>
-                )}
-                <time className="text-xs opacity-50">
-                  {new Date(message.sentTimestamp / 1000).toLocaleString()}
-                </time>
-              </div>
-              <div className="chat-bubble">{message.text}</div>
-              {/* Optional: Footer for sent/delivered status for "isMine" messages */}
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+    <div className="flex flex-col flex-1 w-full min-h-0">
+      <MessageArea displayedMessages={displayedMessages} />
       <form
         className="flex flex-row space-x-2 p-2 border-t border-base-300"
         onSubmit={handleSendMessage}
@@ -163,3 +134,39 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
 };
 
 export default Messages;
+
+const MessageArea: React.FC<{
+  displayedMessages: DisplayMessage[];
+}> = ({ displayedMessages }) => {
+  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  // Scroll to bottom when displayedMessages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [displayedMessages]);
+
+  return (
+    <div className="grow p-2 space-y-2 overflow-y-auto min-h-0">
+      {displayedMessages.map((message) => {
+        const chatAlignment = message.isMine ? "chat-end" : "chat-start";
+
+        return (
+          <div key={message.displayId} className={`chat ${chatAlignment}`}>
+            <div className="chat-header">
+              {!message.isMine && (
+                <span className="mr-1 text-sm font-semibold">
+                  {message.nickname}
+                </span>
+              )}
+              <time className="text-xs opacity-50">
+                {new Date(message.sentTimestamp / 1000).toLocaleString()}
+              </time>
+            </div>
+            <div className="chat-bubble">{message.text}</div>
+            {/* Optional: Footer for sent/delivered status for "isMine" messages */}
+          </div>
+        );
+      })}
+      <div ref={messagesEndRef} />
+    </div>
+  );
+};
