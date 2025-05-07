@@ -1,15 +1,18 @@
 use crate::{
     chat::{channel::TicketOpts, peers::PeerInfo, ChatNode, ChatTicket, NodeId},
     state::AppContext,
+    utils::get_store,
     // utils::get_store,
 };
 use anyhow::anyhow;
+use iroh::SecretKey;
+use tauri::Emitter;
 
 #[tauri::command]
 /// Initialize the Application Context from disk.
 pub async fn init_context(
     state: tauri::State<'_, AppContext>,
-    _app: tauri::AppHandle,
+    app: tauri::AppHandle,
 ) -> tauri::Result<()> {
     let mut node_guard = state.node.lock().await;
     if node_guard.is_some() {
@@ -19,22 +22,39 @@ pub async fn init_context(
         // For now, we just skip to prevent clearing the active channel.
         return Ok(());
     }
+    let store = get_store(&app)?;
+    let nickname = store
+        .get("nickname")
+        .map(|val| serde_json::from_value::<String>(val).unwrap_or_default());
+    *state.nickname.lock().await = nickname;
 
-    // TODO: Load secret key from store if it exists, instead of None for ChatNode::spawn
-
+    let key = match store.get("key") {
+        Some(val) => match serde_json::from_value::<SecretKey>(val) {
+            Ok(key) => key,
+            Err(_) => {
+                let key = SecretKey::generate(rand::rngs::OsRng);
+                store.set("key", serde_json::to_value(&key)?);
+                key
+            }
+        },
+        None => {
+            let key = SecretKey::generate(rand::rngs::OsRng);
+            store.set("key", serde_json::to_value(&key)?);
+            key
+        }
+    };
     // Spawn the Iroh node
-    let node = ChatNode::spawn(None) // Use None for a random key, or load from store
+    let node = ChatNode::spawn(Some(key))
         .await
         .map_err(|e| anyhow!("Failed to spawn node: {}", e))?;
 
-    // Store the newly spawned node
-    *node_guard = Some(node);
-    // Unlock node_guard as we don't need it for the rest of the state mutations.
-    drop(node_guard);
-    *state.nickname.lock().await = None; // Reset nickname on init
+    *node_guard = Some(node); // Store the newly spawned node
+    drop(node_guard); // Unlock node_guard as we don't need it for the rest of the state mutations.
+
     state.drop_channel().await?; // Reset active channel on init
 
     tracing::info!("Iroh node initialized.");
+    app.emit("backend-init", true)?; // Tell UI that we've finished initializing.
     Ok(())
 }
 
@@ -54,6 +74,7 @@ pub async fn create_room(
     // Leave any existing room first
     leave_room(state.clone(), app.clone()).await?;
 
+    let store = get_store(&app)?;
     // Create a new random ticket to initialize the channel.
     // generate_channel will ensure this node is part of the bootstrap.
     let initial_ticket = ChatTicket::new_random();
@@ -71,6 +92,8 @@ pub async fn create_room(
     // Store the active channel info
     state.start_channel(domain_channel, app, receiver).await?;
 
+    store.set("nickname", serde_json::to_value(&nickname)?);
+
     // Get the topic_id from the established channel for logging
     let topic_id_str = state.get_topic_id().await?;
 
@@ -79,12 +102,7 @@ pub async fn create_room(
     tracing::info!("Created and joined room: {}", topic_id_str);
 
     // Generate ticket string from the Channel instance to be shared
-    let ticket_opts = TicketOpts {
-        include_myself: true,
-        include_bootstrap: true,
-        include_neighbors: true,
-    };
-    let ticket_token = state.generate_ticket(ticket_opts).await?;
+    let ticket_token = state.generate_ticket(TicketOpts::all()).await?;
 
     *state.latest_ticket.lock().await = Some(ticket_token.clone());
     Ok(ticket_token)
@@ -105,6 +123,7 @@ pub async fn join_room(
 
     // Leave any existing room first
     leave_room(state.clone(), app.clone()).await?;
+    let store = get_store(&app)?;
 
     tracing::info!("deserializing ticket token: {}", ticket);
     let chat_ticket = ChatTicket::deserialize(&ticket)?;
@@ -130,6 +149,7 @@ pub async fn join_room(
         "Active channel SET in join_room for topic: {}",
         topic_id_str
     );
+    store.set("nickname", serde_json::to_value(&nickname)?);
     *state.nickname.lock().await = Some(nickname);
     tracing::info!("Joined room: {}", topic_id_str);
     Ok(())
@@ -152,9 +172,12 @@ pub async fn send_message(
 pub async fn set_nickname(
     nickname: String,
     state: tauri::State<'_, AppContext>,
+    app: tauri::AppHandle,
 ) -> tauri::Result<()> {
     tracing::info!("Nickname set to: {}", &nickname);
     state.nickname.lock().await.replace(nickname.clone());
+    let store = get_store(&app)?;
+    store.set("nickname", serde_json::to_value(&nickname)?);
     state.set_nickname(nickname).await?;
     Ok(())
 }
