@@ -22,3 +22,9 @@ bun install
 bun tauri dev
 
 ![intro](./img/p2p.gif)
+
+![lobby](./img/lobby.png)
+
+![chat](./img/chat.png)
+
+![eventlog](./img/eventlog.png)
