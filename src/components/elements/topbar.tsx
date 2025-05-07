@@ -1,8 +1,8 @@
-import { MdArrowBack, MdInfo } from "react-icons/md";
 import { leaveRoom } from "services/ipc";
 import PeerInfoDropdown from "./peerList";
 import TicketViewer from "./ticket";
 import { PeerInfo } from "types";
+import { CiLogout, CiMemoPad } from "react-icons/ci";
 
 const TopBar: React.FC<{
   openEventLog: () => void;
@@ -18,7 +18,7 @@ const TopBar: React.FC<{
           location.href = "/lobby";
         }}
       >
-        <MdArrowBack />
+        <CiLogout />
       </button>
       <div className="flex flex-row space-x-2">
         <PeerInfoDropdown peers={neighbours} />
@@ -31,7 +31,7 @@ const TopBar: React.FC<{
           openEventLog();
         }}
       >
-        <MdInfo />
+        <CiMemoPad />
       </button>
     </div>
   );

@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { CiLogin, CiPower, CiShare1 } from "react-icons/ci";
+import { GiExitDoor } from "react-icons/gi";
+import { GrNodes } from "react-icons/gr";
 import {
   createRoom,
   joinRoom,
@@ -9,14 +12,14 @@ import {
 const LobbyForm: React.FC = () => {
   const [nickname, setNickname] = useState<string>();
   const [ticket, setTicket] = useState<string>();
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [rejoinTicket, setRejoinTicket] = useState<string>();
 
   useEffect(() => {
     getNickname().then((name) => {
       if (name) setNickname(name);
     });
     getLatestTicket().then((ticket) => {
-      if (ticket) setTicket(ticket);
+      if (ticket) setRejoinTicket(ticket);
     });
   }, []);
   return (
@@ -24,19 +27,16 @@ const LobbyForm: React.FC = () => {
       <form
         className="flex flex-col space-y-2"
         onSubmit={async (e) => {
-          setSubmitting(true);
           e.preventDefault();
           if (nickname) {
             if (ticket) {
               if (await joinRoom(ticket, nickname)) {
                 window.location.href = "/chat";
               }
-              setSubmitting(false);
             } else {
               if (await createRoom(nickname)) {
                 window.location.href = "/chat";
               }
-              setSubmitting(false);
             }
           }
         }}
@@ -57,10 +57,22 @@ const LobbyForm: React.FC = () => {
           onChange={(e) => setTicket(e.target.value)}
         />
         <button disabled={!nickname} type="submit" className="btn btn-accent">
-          {ticket ? "Join Room" : "Create Room"}
+          {ticket ? (
+            <>
+              Enter Room <CiLogin />
+            </>
+          ) : (
+            <>
+              Create Room <CiShare1 />
+            </>
+          )}
         </button>
+        {rejoinTicket ? (
+          <button disabled={!nickname} type="button" className="btn btn-accent">
+            Rejoin Room <CiLogin />
+          </button>
+        ) : null}
       </form>
-      {submitting && <p>Submitting...</p>}
     </>
   );
 };

@@ -1,7 +1,7 @@
 {
   "name": "peer-to-peer",
   "private": true,
-  "version": "0.3",
+  "version": "0.3.1",
   "type": "module",
   "repository": "https://github.com/jamessizeland/peer-to-peer",
   "scripts": {
