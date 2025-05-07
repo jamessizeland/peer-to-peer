@@ -18,8 +18,10 @@ export interface Message {
 
 export interface PeerInfo {
   id: string;
-  name: string;
-  status: "Online" | "Away" | "Offline";
-  lastSeen: Date;
+  nickname: string;
+  status: PeerStatus;
+  lastSeen: number;
   role: "Myself" | "RemoteNode";
 }
+
+export type PeerStatus = "Online" | "Away" | "Offline";
