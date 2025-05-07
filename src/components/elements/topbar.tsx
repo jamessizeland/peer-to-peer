@@ -1,21 +1,18 @@
-import { useEffect, useState } from "react";
 import { MdArrowBack, MdInfo } from "react-icons/md";
-import { getNickname, leaveRoom } from "services/ipc";
+import { leaveRoom } from "services/ipc";
+import PeerInfoDropdown from "./peerList";
+import TicketViewer from "./ticket";
+import { PeerInfo } from "types";
 
-const TopBar: React.FC<{ openEventLog: () => void }> = ({ openEventLog }) => {
-  const [nickname, setNickname] = useState("");
-
-  useEffect(() => {
-    getNickname().then((name) => {
-      if (name) setNickname(name);
-    });
-  }, []);
-
+const TopBar: React.FC<{
+  openEventLog: () => void;
+  neighbours: PeerInfo[];
+}> = ({ openEventLog, neighbours }) => {
   return (
-    <div className="w-screen h-10 text-white flex items-center justify-center">
+    <div className="w-screen h-10 text-white flex justify-between">
       <button
         type="button"
-        className="absolute left-1 text-2xl btn btn-outline btn-accent"
+        className="text-2xl w-15 btn btn-outline btn-accent"
         onClick={async () => {
           await leaveRoom();
           location.href = "/lobby";
@@ -23,10 +20,13 @@ const TopBar: React.FC<{ openEventLog: () => void }> = ({ openEventLog }) => {
       >
         <MdArrowBack />
       </button>
-      <h1 className="m-2 text-2xl font-bold uppercase">{nickname}</h1>
+      <div className="flex flex-row space-x-2">
+        <PeerInfoDropdown peers={neighbours} />
+        <TicketViewer />
+      </div>
       <button
         type="button"
-        className="absolute right-1 text-2xl btn btn-outline btn-accent"
+        className="text-2xl w-15 btn btn-outline btn-accent"
         onClick={() => {
           openEventLog();
         }}

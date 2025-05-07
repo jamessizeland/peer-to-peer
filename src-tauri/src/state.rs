@@ -122,68 +122,23 @@ impl AppContext {
         app: tauri::AppHandle,
         mut receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
     ) -> AbortOnDropHandle<()> {
-        let peers_clone = self.peers.clone();
-        let active_channel_clone = self.active_channel.clone();
-        let latest_ticket_clone = self.latest_ticket.clone();
-        let mut tick_interval = interval(Duration::from_secs(1));
+        let mut tick_interval = interval(Duration::from_secs(2));
+        let peers = self.peers.clone();
+        let active_channel = self.active_channel.clone();
+        let latest_ticket = self.latest_ticket.clone();
 
         AbortOnDropHandle::new(n0_future::task::spawn(async move {
             loop {
                 select! {
                     biased; // Optional: prioritize receiver events if both are ready
                     event_result = receiver.next() => { // `receiver` is moved into the task
-                        match event_result {
-                            Some(Ok(event)) => {
-                                if let Some(update) = peers_clone.lock().await.update(Some(&event)) {
-                                    if let Err(e) = app.emit("peers-event", update) {
-                                        tracing::error!("Failed to emit event to frontend: {}", e);
-                                    }
-                                };
-                                if let Err(e) = app.emit("chat-event", &event) {
-                                    tracing::error!("Failed to emit event to frontend: {}", e);
-                                }
-                                // If a peer joins or a new neighbor comes up, update the latest_ticket
-                                match &event {
-                                    Event::Joined { .. } | Event::NeighborUp { .. } => {
-                                        tracing::debug!("Peer event detected, attempting to update latest ticket.");
-                                        if let Some(active_channel_guard) = active_channel_clone.lock().await.as_ref() {
-
-                                            match active_channel_guard.inner.ticket(TicketOpts::all()) {
-                                                Ok(new_ticket_str) => {
-                                                    *latest_ticket_clone.lock().await = Some(new_ticket_str.clone());
-                                                    tracing::info!("Updated latest_ticket due to new peer joining/neighbor up.");
-                                                    if let Err(e) = app.emit("ticket-updated", new_ticket_str) {
-                                                        tracing::warn!("Failed to emit ticket-updated event: {}", e);
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    tracing::error!("Failed to regenerate ticket after peer event: {}", e);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    _ => {} // Other events do not trigger ticket update
-                                }
-                            }
-                            Some(Err(e)) => {
-                                tracing::error!("Error receiving chat event: {}", e);
-                                let _ = app.emit(
-                                    "chat-error",
-                                    Event::Errorred {
-                                        message: e.to_string(),
-                                    },
-                                );
-                            }
-                            None => {
-                                tracing::info!("Chat event stream ended.");
-                                let _ = app.emit("chat-event", Event::Disconnected);
-                                break; // Stop listening when the stream ends
-                            }
-                        }
+                        if handle_event(event_result, &peers, &active_channel, &latest_ticket, &app).await {
+                            break; // Stop listening when the stream ends
+                        };
                     },
                     _ = tick_interval.tick() => {
                         // This branch runs every second
-                        if let Some(update) = peers_clone.lock().await.update(None) {
+                        if let Some(update) = peers.lock().await.update(None) {
                             if let Err(e) = app.emit("peers-event", update) {
                                 tracing::error!("Failed to emit event to frontend: {}", e);
                             }
@@ -193,4 +148,67 @@ impl AppContext {
             }
         }))
     }
+}
+
+/// Handle the event stream, if we want to break the loop we return True.
+async fn handle_event(
+    event_result: Option<anyhow::Result<Event>>,
+    peers_clone: &Arc<TokioMutex<PeerMap>>,
+    active_channel_clone: &Arc<TokioMutex<Option<ActiveChannel>>>,
+    latest_ticket_clone: &Arc<TokioMutex<Option<String>>>,
+    app: &AppHandle,
+) -> bool {
+    match event_result {
+        Some(Ok(event)) => {
+            if let Some(update) = peers_clone.lock().await.update(Some(&event)) {
+                if let Err(e) = app.emit("peers-event", update) {
+                    tracing::error!("Failed to emit event to frontend: {}", e);
+                }
+            };
+            if let Err(e) = app.emit("chat-event", &event) {
+                tracing::error!("Failed to emit event to frontend: {}", e);
+            }
+            // If a peer joins or a new neighbor comes up, update the latest_ticket
+            match &event {
+                Event::Joined { .. } | Event::NeighborUp { .. } => {
+                    tracing::debug!("Peer event detected, attempting to update latest ticket.");
+                    if let Some(active_channel_guard) = active_channel_clone.lock().await.as_ref() {
+                        match active_channel_guard.inner.ticket(TicketOpts::all()) {
+                            Ok(new_ticket_str) => {
+                                *latest_ticket_clone.lock().await = Some(new_ticket_str.clone());
+                                tracing::info!(
+                                    "Updated latest_ticket due to new peer joining/neighbor up."
+                                );
+                                if let Err(e) = app.emit("ticket-updated", new_ticket_str) {
+                                    tracing::warn!("Failed to emit ticket-updated event: {}", e);
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!(
+                                    "Failed to regenerate ticket after peer event: {}",
+                                    e
+                                );
+                            }
+                        }
+                    }
+                }
+                _ => {} // Other events do not trigger ticket update
+            }
+        }
+        Some(Err(e)) => {
+            tracing::error!("Error receiving chat event: {}", e);
+            let _ = app.emit(
+                "chat-error",
+                Event::Errorred {
+                    message: e.to_string(),
+                },
+            );
+        }
+        None => {
+            tracing::info!("Chat event stream ended.");
+            let _ = app.emit("chat-event", Event::Disconnected);
+            return true; // Stop listening when the stream ends
+        }
+    };
+    false // Continue listening
 }

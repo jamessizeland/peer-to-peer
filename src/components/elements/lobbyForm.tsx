@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { createRoom, joinRoom, getNickname } from "services/ipc";
+import {
+  createRoom,
+  joinRoom,
+  getNickname,
+  getLatestTicket,
+} from "services/ipc";
 
 const LobbyForm: React.FC = () => {
   const [nickname, setNickname] = useState<string>();
@@ -9,6 +14,9 @@ const LobbyForm: React.FC = () => {
   useEffect(() => {
     getNickname().then((name) => {
       if (name) setNickname(name);
+    });
+    getLatestTicket().then((ticket) => {
+      if (ticket) setTicket(ticket);
     });
   }, []);
   return (

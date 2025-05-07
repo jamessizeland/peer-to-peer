@@ -27,6 +27,7 @@ pub async fn init_context(
         .get("nickname")
         .map(|val| serde_json::from_value::<String>(val).unwrap_or_default());
     *state.nickname.lock().await = nickname;
+    *state.latest_ticket.lock().await = None;
 
     let key = match store.get("key") {
         Some(val) => match serde_json::from_value::<SecretKey>(val) {

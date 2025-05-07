@@ -16,6 +16,7 @@ impl PeerMap {
     }
     /// Update the activity of the peers list. Returns a list of updated peers if updated.
     pub fn update(&mut self, event: Option<&Event>) -> Option<Vec<PeerInfo>> {
+        let before = self.to_vec();
         let map = &mut self.0;
         match event {
             Some(Event::Joined { neighbors }) => {
@@ -44,7 +45,8 @@ impl PeerMap {
             None => {
                 // tick at regular intervals to update the peerStatus
                 for peer in map.values_mut() {
-                    let millis_since_last_seen = (get_timestamp() - peer.last_seen) / 1000;
+                    let millis_since_last_seen =
+                        (get_timestamp().saturating_sub(peer.last_seen)) / 1000;
                     match millis_since_last_seen {
                         0..=10_000 => peer.status = PeerStatus::Online,
                         10_001..=30_000 => peer.status = PeerStatus::Away,
@@ -54,13 +56,18 @@ impl PeerMap {
             }
             _ => return None, // ignore other events for now,
         }
-        Some(self.to_vec())
+        let after = self.to_vec();
+        if before != after {
+            Some(after)
+        } else {
+            None
+        }
     }
 }
 
 /// Information for the frontend to display about known peers
 /// in the Gossip Swarm.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeerInfo {
     pub id: NodeId,
@@ -82,13 +89,13 @@ impl PeerInfo {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PeerRole {
     Myself,
     RemoteNode,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PeerStatus {
     Online,
     Away,
