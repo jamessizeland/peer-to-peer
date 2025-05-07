@@ -59,9 +59,9 @@ pub async fn create_room(
     // generate_channel will ensure this node is part of the bootstrap.
     let initial_ticket = ChatTicket::new_random();
 
-    // Use generate_channel from chat::channel
+    // Use generate_channel from [chat::channel]
     let mut domain_channel = node
-        .generate_channel(initial_ticket.clone(), nickname.clone())
+        .generate_channel(initial_ticket, nickname.clone())
         .map_err(|e| anyhow!("Failed to generate channel: {}", e))?;
 
     // Take the receiver from the Channel object to give to spawn_event_listener
@@ -195,7 +195,7 @@ pub async fn disconnect(
     app: tauri::AppHandle,
 ) -> tauri::Result<()> {
     // First, leave any active room
-    leave_room(state.clone(), app.clone()).await?;
+    leave_room(state.clone(), app).await?;
 
     // Then, shut down the node
     let mut node_guard = state.node.lock().await;

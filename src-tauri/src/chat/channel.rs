@@ -10,7 +10,8 @@ pub use iroh_gossip::proto::TopicId;
 use n0_future::{boxed::BoxStream, time::Duration, StreamExt as _};
 use serde::{Deserialize, Serialize};
 
-type ChatReceiver = BoxStream<anyhow::Result<Event>>; // TODO check if this type is correct, example uses wasm_streams::readable::sys::ReadableStream;
+// TODO check if this type is correct, example uses wasm_streams::readable::sys::ReadableStream;
+type ChatReceiver = BoxStream<anyhow::Result<Event>>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PeerInfo {
@@ -106,7 +107,6 @@ impl ChatNode {
         // Add ourselves to the ticket.
         let mut ticket = ticket;
         ticket.bootstrap.insert(self.node_id());
-        // ticket.bootstrap = [self.0.node_id()].into_iter().collect();
 
         let topic = Channel {
             topic_id: ticket.topic_id,
