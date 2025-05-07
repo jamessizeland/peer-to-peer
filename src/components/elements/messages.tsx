@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdSend } from "react-icons/md";
 import { sendMessage, getNodeId, getNickname } from "services/ipc";
-import { MessageReceivedEvent } from "types/chat";
+import { MessageReceivedEvent } from "types/events";
 
 // This interface will represent any message shown in the UI,
 // whether it's locally sent or received from props.
@@ -106,8 +106,8 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-y-auto">
-      <div className="flex-grow p-2 space-y-2">
+    <div className="flex flex-col h-full w-full">
+      <div className="flex-grow p-2 space-y-2 overflow-y-auto">
         {displayedMessages.map((message) => {
           const chatAlignment = message.isMine ? "chat-end" : "chat-start";
 

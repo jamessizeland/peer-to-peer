@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { ChatEvent } from "types/chat";
+import { ChatEvent } from "types/events";
 
 interface EventLogModalProps {
   isOpen: boolean;

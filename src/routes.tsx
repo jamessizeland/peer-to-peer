@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import { checkEnv } from "utils";
 import { AnimatePresence, motion } from "motion/react";
-import { LobbyPage, ChatPage } from "pages";
+import { LobbyPage, ChatPage, SplashPage } from "pages";
 
 type RouteType = {
   title: string;
@@ -12,8 +12,13 @@ type RouteType = {
 
 const allRoutes: RouteType[] = [
   {
-    title: "Lobby",
+    title: "Splash",
     path: "/",
+    element: <SplashPage />,
+  },
+  {
+    title: "Lobby",
+    path: "/lobby",
     element: <LobbyPage />,
   },
   {

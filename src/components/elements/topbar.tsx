@@ -18,7 +18,7 @@ const TopBar: React.FC<{ openEventLog: () => void }> = ({ openEventLog }) => {
         className="absolute left-1 text-2xl btn btn-outline btn-accent"
         onClick={async () => {
           await leaveRoom();
-          location.href = "/";
+          location.href = "/lobby";
         }}
       >
         <MdArrowBack />
