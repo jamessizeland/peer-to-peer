@@ -1,8 +1,9 @@
 {
   "name": "peer-to-peer",
   "private": true,
-  "version": "0.2.4",
+  "version": "0.2.6",
   "type": "module",
+  "repository": "https://github.com/jamessizeland/peer-to-peer",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
