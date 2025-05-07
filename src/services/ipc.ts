@@ -16,7 +16,8 @@ export async function initContext(): Promise<void> {
  an out-of-band Join Code to others to connect. */
 export async function createRoom(nickname: string): Promise<string> {
   try {
-    return await invoke<string>("create_room", { nickname });
+    let ticket = await invoke<string>("create_room", { nickname });
+    return ticket;
   } catch (e) {
     notifyError(`Failed to create room: ${e}`, "RoomCreateError");
     return "";
@@ -27,11 +28,23 @@ export async function createRoom(nickname: string): Promise<string> {
 export async function joinRoom(
   ticket: string,
   nickname: string
-): Promise<void> {
+): Promise<boolean> {
   try {
     await invoke("join_room", { ticket, nickname });
+    return true;
   } catch (e) {
     notifyError(`Failed to join room: ${e}`, "RoomJoinError");
+    return false;
+  }
+}
+
+/** Return the ticket string for the latest created room. */
+export async function getLatestTicket(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("get_latest_ticket");
+  } catch (e) {
+    notifyError(`Failed to get latest ticket: ${e}`, "TicketGetError");
+    return null;
   }
 }
 
@@ -50,6 +63,16 @@ export async function setNickname(nickname: string): Promise<void> {
     await invoke("set_nickname", { nickname });
   } catch (e) {
     notifyError(`Failed to set nickname: ${e}`, "NicknameSetError");
+  }
+}
+
+/** Get the stored nickname for this node. */
+export async function getNickname(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("get_nickname");
+  } catch (e) {
+    notifyError(`Failed to get nickname: ${e}`, "NicknameGetError");
+    return null;
   }
 }
 

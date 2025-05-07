@@ -26,3 +26,13 @@ body {
   touch-action: pan-x pan-y;       /* block pinch‐zoom & pinch‐rotate */
   overscroll-behavior: none;       /* block edge‐swipe navigations */
 }
+
+code {
+  font-family: "JetBrainsMono", monospace;
+  font-size: 1em;
+  text-wrap-mode: nowrap;
+  white-space-collapse: preserve;
+  width: auto;
+  display: inline;
+
+}

@@ -1,46 +1,12 @@
-use anyhow::{anyhow, Result};
-use iroh::endpoint::RemoteInfo;
-use n0_future::{
-    boxed::BoxStream,
-    task::{self, AbortOnDropHandle},
-    StreamExt,
-};
-use tauri::Emitter as _;
-
 use crate::{
-    chat::{ChatNode, ChatTicket, Event, NodeId},
-    state::{ActiveChannel, AppContext},
+    chat::{channel::TicketOpts, peers::PeerInfo, ChatNode, ChatTicket, NodeId},
+    state::AppContext,
     utils::get_store,
+    // utils::get_store,
 };
-
-/// Spawns a background task to listen for chat events and emit them to the frontend.
-fn spawn_event_listener(
-    app: tauri::AppHandle,
-    mut receiver: BoxStream<Result<Event>>,
-) -> AbortOnDropHandle<()> {
-    AbortOnDropHandle::new(task::spawn(async move {
-        loop {
-            match receiver.next().await {
-                Some(Ok(event)) => {
-                    if let Err(e) = app.emit("chat-event", &event) {
-                        tracing::error!("Failed to emit event to frontend: {}", e);
-                    }
-                }
-                Some(Err(e)) => {
-                    tracing::error!("Error receiving chat event: {}", e);
-                    // Optionally emit an error event to the frontend
-                    let _ = app.emit("chat-error", format!("Receive error: {}", e));
-                    break; // Stop listening on error
-                }
-                None => {
-                    tracing::info!("Chat event stream ended.");
-                    let _ = app.emit("chat-event", Event::Lagged); // Or a custom "Disconnected" event
-                    break; // Stop listening when the stream ends
-                }
-            }
-        }
-    }))
-}
+use anyhow::anyhow;
+use iroh::SecretKey;
+use tauri::Emitter;
 
 #[tauri::command]
 /// Initialize the Application Context from disk.
@@ -48,21 +14,48 @@ pub async fn init_context(
     state: tauri::State<'_, AppContext>,
     app: tauri::AppHandle,
 ) -> tauri::Result<()> {
+    let mut node_guard = state.node.lock().await;
+    if node_guard.is_some() {
+        tracing::info!("Iroh node already initialized. Skipping re-initialization.");
+        // Optionally, you might still want to ensure nickname and active_channel are consistent
+        // or decide if this scenario (calling init when already init) is an error.
+        // For now, we just skip to prevent clearing the active channel.
+        return Ok(());
+    }
     let store = get_store(&app)?;
-    // get context information from store
-    // TODO: Load secret key from store if it exists?
+    let nickname = store
+        .get("nickname")
+        .map(|val| serde_json::from_value::<String>(val).unwrap_or_default());
+    *state.nickname.lock().await = nickname;
+    *state.latest_ticket.lock().await = None;
 
+    let key = match store.get("key") {
+        Some(val) => match serde_json::from_value::<SecretKey>(val) {
+            Ok(key) => key,
+            Err(_) => {
+                let key = SecretKey::generate(rand::rngs::OsRng);
+                store.set("key", serde_json::to_value(&key)?);
+                key
+            }
+        },
+        None => {
+            let key = SecretKey::generate(rand::rngs::OsRng);
+            store.set("key", serde_json::to_value(&key)?);
+            key
+        }
+    };
     // Spawn the Iroh node
-    let node = ChatNode::spawn(None) // Use None for a random key, or load from store
+    let node = ChatNode::spawn(Some(key))
         .await
         .map_err(|e| anyhow!("Failed to spawn node: {}", e))?;
 
-    // Store the node in the AppContext
-    *state.node.lock().await = Some(node);
-    *state.nickname.lock().await = None; // Reset nickname on init
-    *state.active_channel.lock().await = None; // Clear any previous channel state
+    *node_guard = Some(node); // Store the newly spawned node
+    drop(node_guard); // Unlock node_guard as we don't need it for the rest of the state mutations.
+
+    state.drop_channel().await?; // Reset active channel on init
 
     tracing::info!("Iroh node initialized.");
+    app.emit("backend-init", true)?; // Tell UI that we've finished initializing.
     Ok(())
 }
 
@@ -82,31 +75,38 @@ pub async fn create_room(
     // Leave any existing room first
     leave_room(state.clone(), app.clone()).await?;
 
-    // Create a new random ticket
-    let mut ticket = ChatTicket::new_random();
-    // Add ourselves to the bootstrap list for the ticket
-    ticket.bootstrap.insert(node.node_id());
+    let store = get_store(&app)?;
+    // Create a new random ticket to initialize the channel.
+    // generate_channel will ensure this node is part of the bootstrap.
+    let initial_ticket = ChatTicket::new_random();
 
-    // Join the topic using the node's join method
-    let (sender, receiver) = node
-        .join(&ticket, nickname.clone())
-        .map_err(|e| anyhow!("Failed to join topic: {}", e))?;
+    // Use generate_channel from [chat::channel]
+    let mut domain_channel = node
+        .generate_channel(initial_ticket, nickname.clone())
+        .map_err(|e| anyhow!("Failed to generate channel: {}", e))?;
 
-    // Spawn the event listener task
-    let receiver_handle = spawn_event_listener(app.clone(), receiver);
+    // Take the receiver from the Channel object to give to spawn_event_listener
+    let receiver = domain_channel
+        .take_receiver()
+        .ok_or_else(|| anyhow!("Receiver already taken from channel object"))?;
 
     // Store the active channel info
-    *state.active_channel.lock().await = Some(ActiveChannel {
-        sender,
-        receiver_handle,
-        topic_id: ticket.topic_id,
-    });
+    state.start_channel(domain_channel, app, receiver).await?;
+
+    store.set("nickname", serde_json::to_value(&nickname)?);
+
+    // Get the topic_id from the established channel for logging
+    let topic_id_str = state.get_topic_id().await?;
+
     *state.nickname.lock().await = Some(nickname);
 
-    tracing::info!("Created and joined room: {}", ticket.topic_id);
+    tracing::info!("Created and joined room: {}", topic_id_str);
 
-    // Return the serialized ticket so it can be shared
-    Ok(ticket.serialize())
+    // Generate ticket string from the Channel instance to be shared
+    let ticket_token = state.generate_ticket(TicketOpts::all()).await?;
+
+    *state.latest_ticket.lock().await = Some(ticket_token.clone());
+    Ok(ticket_token)
 }
 
 #[tauri::command]
@@ -124,26 +124,35 @@ pub async fn join_room(
 
     // Leave any existing room first
     leave_room(state.clone(), app.clone()).await?;
+    let store = get_store(&app)?;
 
-    let ticket = ChatTicket::deserialize(&ticket)?;
+    tracing::info!("deserializing ticket token: {}", ticket);
+    let chat_ticket = ChatTicket::deserialize(&ticket)?;
+    *state.latest_ticket.lock().await = Some(ticket.clone());
 
-    // Join the topic
-    let (sender, receiver) = node
-        .join(&ticket, nickname.clone())
-        .map_err(|e| anyhow!("Failed to join topic: {}", e))?;
+    // Use generate_channel from chat::channel
+    let mut domain_channel = node
+        .generate_channel(chat_ticket.clone(), nickname.clone())
+        .map_err(|e| anyhow!("Failed to generate channel: {}", e))?;
 
-    // Spawn the event listener task
-    let receiver_handle = spawn_event_listener(app.clone(), receiver);
+    // Take the receiver from the Channel object
+    let receiver = domain_channel
+        .take_receiver()
+        .ok_or_else(|| anyhow!("Receiver already taken from channel object"))?;
 
     // Store the active channel info
-    *state.active_channel.lock().await = Some(ActiveChannel {
-        sender,
-        receiver_handle,
-        topic_id: ticket.topic_id,
-    });
-    *state.nickname.lock().await = Some(nickname);
+    state.start_channel(domain_channel, app, receiver).await?;
 
-    tracing::info!("Joined room: {}", ticket.topic_id);
+    // Get the topic_id from the established channel for logging
+    let topic_id_str = state.get_topic_id().await?;
+
+    tracing::info!(
+        "Active channel SET in join_room for topic: {}",
+        topic_id_str
+    );
+    store.set("nickname", serde_json::to_value(&nickname)?);
+    *state.nickname.lock().await = Some(nickname);
+    tracing::info!("Joined room: {}", topic_id_str);
     Ok(())
 }
 
@@ -152,19 +161,11 @@ pub async fn join_room(
 pub async fn send_message(
     message: String,
     state: tauri::State<'_, AppContext>,
-    app: tauri::AppHandle,
+    _app: tauri::AppHandle, // Marked as unused, can be removed if not needed by Tauri
 ) -> tauri::Result<()> {
-    let active_channel_guard = state.active_channel.lock().await;
-    if let Some(channel) = active_channel_guard.as_ref() {
-        channel
-            .sender
-            .send(message)
-            .await
-            .map_err(|e| anyhow!("Failed to send message: {}", e))?;
-        Ok(())
-    } else {
-        Err(anyhow!("Not currently in a room").into())
-    }
+    let sender = state.get_sender().await?;
+    sender.send(message).await?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -172,35 +173,41 @@ pub async fn send_message(
 pub async fn set_nickname(
     nickname: String,
     state: tauri::State<'_, AppContext>,
+    app: tauri::AppHandle,
 ) -> tauri::Result<()> {
-    let mut active_channel_guard = state.active_channel.lock().await;
-    if let Some(channel) = active_channel_guard.as_mut() {
-        channel.sender.set_nickname(nickname.clone());
-        *state.nickname.lock().await = Some(nickname);
-        Ok(())
-    } else {
-        Err(anyhow!("Not currently in a room").into())
-    }
+    tracing::info!("Nickname set to: {}", &nickname);
+    state.nickname.lock().await.replace(nickname.clone());
+    let store = get_store(&app)?;
+    store.set("nickname", serde_json::to_value(&nickname)?);
+    state.set_nickname(nickname).await?;
+    Ok(())
+}
+
+#[tauri::command]
+/// Get the stored nickname for this node.
+pub async fn get_nickname(state: tauri::State<'_, AppContext>) -> tauri::Result<Option<String>> {
+    let nickname_guard = state.nickname.lock().await;
+    Ok(nickname_guard.clone())
+}
+
+#[tauri::command]
+/// Get the stored room ticket string
+pub async fn get_latest_ticket(
+    state: tauri::State<'_, AppContext>,
+) -> tauri::Result<Option<String>> {
+    let ticket_guard = state.latest_ticket.lock().await;
+    Ok(ticket_guard.clone())
 }
 
 #[tauri::command]
 /// Leave the currently joined room
 pub async fn leave_room(
     state: tauri::State<'_, AppContext>,
-    app: tauri::AppHandle,
+    _app: tauri::AppHandle,
 ) -> tauri::Result<()> {
-    let mut active_channel_guard = state.active_channel.lock().await;
-    if let Some(channel) = active_channel_guard.take() {
-        // Dropping the ActiveChannel struct automatically drops the AbortOnDropHandle
-        // for the receiver task, stopping it.
-        // It also drops the ChatSender, which holds an Arc to the presence task handle, stopping that too.
-        // TODO: Verify if iroh-gossip requires explicit unsubscribe or if dropping sender/receiver is enough.
-        // For now, assume dropping is sufficient cleanup for the gossip topic participation.
-        tracing::info!("Left room: {}", channel.topic_id);
-        *state.nickname.lock().await = None; // Clear nickname when leaving
-    } else {
-        tracing::debug!("Leave room called, but not in a room.");
-    }
+    if let Some(id) = state.drop_channel().await? {
+        tracing::info!("Left room: {}", id);
+    };
     Ok(())
 }
 
@@ -211,14 +218,12 @@ pub async fn disconnect(
     app: tauri::AppHandle,
 ) -> tauri::Result<()> {
     // First, leave any active room
-    leave_room(state.clone(), app.clone()).await?;
+    leave_room(state.clone(), app).await?;
 
     // Then, shut down the node
     let mut node_guard = state.node.lock().await;
     if let Some(node) = node_guard.take() {
-        // node.shutdown() is async, but we're in a sync mutex guard.
-        // We need to drop the guard before awaiting.
-        drop(node_guard);
+        drop(node_guard); // <- is this needed?
         node.shutdown().await;
         tracing::info!("Iroh node shut down.");
     } else {
@@ -230,12 +235,8 @@ pub async fn disconnect(
 
 #[tauri::command]
 /// Returns information about all the remote endpoints this endpoint knows about
-pub async fn get_peers(state: tauri::State<'_, AppContext>) -> tauri::Result<Vec<RemoteInfo>> {
-    let node = state.node.lock().await;
-    match node.as_ref() {
-        Some(chat_node) => Ok(chat_node.remote_info()),
-        None => Err(anyhow!("Node not initialized").into()), // Or return Ok(vec![]) if preferred
-    }
+pub async fn get_peers(state: tauri::State<'_, AppContext>) -> tauri::Result<Vec<PeerInfo>> {
+    Ok(state.get_peers().await)
 }
 
 #[tauri::command]

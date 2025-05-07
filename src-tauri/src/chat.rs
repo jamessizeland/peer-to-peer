@@ -1,6 +1,7 @@
-mod channel;
+pub mod channel;
 mod event;
 mod message;
+pub mod peers;
 mod sender;
 mod ticket;
 
@@ -23,7 +24,6 @@ pub use ticket::ChatTicket;
 use tokio::sync::Notify;
 use tracing::{debug, info, warn};
 
-pub const TOPIC_PREFIX: &str = "iroh-example-chat/0:";
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(5);
 
 pub struct ChatNode {
@@ -66,6 +66,7 @@ impl ChatNode {
         self.router.endpoint().node_id()
     }
 
+    #[allow(unused)]
     /// Returns information about all the remote nodes this [`Endpoint`] knows about.
     pub fn remote_info(&self) -> Vec<RemoteInfo> {
         self.router

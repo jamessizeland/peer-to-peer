@@ -7,17 +7,11 @@ use std::{
 use super::{event::Event, sender::ChatSender, ChatNode, ChatTicket};
 pub use iroh::NodeId;
 pub use iroh_gossip::proto::TopicId;
-use n0_future::{boxed::BoxStream, time::Duration, StreamExt as _};
+use n0_future::{boxed::BoxStream, StreamExt as _};
 use serde::{Deserialize, Serialize};
 
-type ChatReceiver = BoxStream<anyhow::Result<Event>>; // TODO check if this type is correct, example uses wasm_streams::readable::sys::ReadableStream;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PeerInfo {
-    pub node_id: NodeId,
-    pub nickname: String,
-    pub last_active: Duration,
-}
+// TODO check if this type is correct, example uses wasm_streams::readable::sys::ReadableStream;
+type ChatReceiver = BoxStream<anyhow::Result<Event>>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,13 +21,24 @@ pub struct TicketOpts {
     pub include_neighbors: bool,
 }
 
+impl TicketOpts {
+    /// Yes to everything.
+    pub fn all() -> Self {
+        Self {
+            include_myself: true,
+            include_bootstrap: true,
+            include_neighbors: true,
+        }
+    }
+}
+
 pub struct Channel {
     topic_id: TopicId,
     me: NodeId,
     bootstrap: BTreeSet<NodeId>,
     neighbors: Arc<Mutex<BTreeSet<NodeId>>>,
     sender: ChatSender,
-    receiver: ChatReceiver,
+    receiver: Option<ChatReceiver>,
 }
 
 impl Channel {
@@ -41,9 +46,8 @@ impl Channel {
         self.sender.clone()
     }
 
-    pub fn receiver(&mut self) -> ChatReceiver {
-        // self.receiver.clone()
-        todo!("how to return reference to receiver?")
+    pub fn take_receiver(&mut self) -> Option<ChatReceiver> {
+        self.receiver.take()
     }
 
     pub fn ticket(&self, opts: TicketOpts) -> anyhow::Result<String> {
@@ -66,6 +70,7 @@ impl Channel {
         self.topic_id.to_string()
     }
 
+    #[allow(unused)]
     pub fn neighbors(&self) -> Vec<String> {
         self.neighbors
             .lock()
@@ -107,7 +112,6 @@ impl ChatNode {
         // Add ourselves to the ticket.
         let mut ticket = ticket;
         ticket.bootstrap.insert(self.node_id());
-        // ticket.bootstrap = [self.0.node_id()].into_iter().collect();
 
         let topic = Channel {
             topic_id: ticket.topic_id,
@@ -115,7 +119,7 @@ impl ChatNode {
             neighbors,
             me: self.node_id(),
             sender,
-            receiver,
+            receiver: Some(receiver),
         };
         Ok(topic)
     }
