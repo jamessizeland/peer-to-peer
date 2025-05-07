@@ -20,7 +20,7 @@ Check prerequisites:
 - <https://bun.sh/docs/installation>
 
 ```bash
-git clone <https://github.com/jamessizeland/peer-to-peer>
+git clone https://github.com/jamessizeland/peer-to-peer
 cd peer-to-peer
 bun install
 bun tauri dev
