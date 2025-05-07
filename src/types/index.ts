@@ -19,12 +19,7 @@ export interface Message {
 export interface PeerInfo {
   id: string;
   name: string;
-  status: "online" | "away" | "offline";
+  status: "Online" | "Away" | "Offline";
   lastSeen: Date;
-  role: PeerRole;
-}
-
-export enum PeerRole {
-  Myself,
-  RemoteNode,
+  role: "Myself" | "RemoteNode";
 }

@@ -1,5 +1,13 @@
 interface BaseEvent {
-  type: string;
+  type:
+    | "joined"
+    | "messageReceived"
+    | "neighborUp"
+    | "neighborDown"
+    | "presence"
+    | "lagged"
+    | "errored"
+    | "disconnected";
 }
 
 /** We joined the topic with at least one peer.
@@ -43,6 +51,11 @@ export interface LaggedEvent extends BaseEvent {
   type: "lagged";
 }
 
+/** Backend reporting an end of stream event.  Not part of the Gossip Events protocol. */
+export interface DisconnectedEvent extends BaseEvent {
+  type: "disconnected";
+}
+
 /** Backend reporting an error event.  Not part of the Gossip Events protocol. */
 export interface ErrorEvent extends BaseEvent {
   type: "errored";
@@ -57,4 +70,5 @@ export type ChatEvent =
   | NeighborDownEvent
   | PresenceEvent
   | LaggedEvent
+  | DisconnectedEvent
   | ErrorEvent;
