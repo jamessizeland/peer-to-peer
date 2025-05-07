@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { getLatestTicket } from "services/ipc";
 import { ChatEvent, MessageReceivedEvent } from "types/events";
 import { listen } from "@tauri-apps/api/event";
 import TopBar from "components/elements/topbar";
@@ -10,18 +9,10 @@ import { notify } from "services/notifications";
 import { PeerInfo, PeerStatus } from "types";
 
 export function ChatPage() {
-  const [ticket, setTicket] = useState<string>();
   const [messages, setMessages] = useState<MessageReceivedEvent[]>([]);
   const [eventLog, setEventLog] = useState<ChatEvent[]>([]);
   const [neighbours, setNeighbours] = useState<PeerInfo[]>([]);
   const [openLog, setOpenLog] = useState<boolean>(false);
-
-  useEffect(() => {
-    getLatestTicket().then((ticket) => {
-      console.log(ticket);
-      if (ticket) setTicket(ticket);
-    });
-  }, []);
 
   useEffect(() => {
     const updatePeersRef = listen<PeerInfo[]>("peers-event", async (event) => {
@@ -56,7 +47,7 @@ export function ChatPage() {
       <TopBar openEventLog={() => setOpenLog(true)} />
       <div className="flex flex-row">
         <PeerInfoDropdown peers={neighbours} />
-        <TicketViewer ticket={ticket} />
+        <TicketViewer />
       </div>
       <EventLogModal
         eventLog={eventLog}
