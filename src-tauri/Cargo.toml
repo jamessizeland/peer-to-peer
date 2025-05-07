@@ -55,6 +55,7 @@ serde_json = "1"
 
 # misc
 num_cpus = { version = "1.15.0" }
+tauri-plugin-clipboard-manager = "2"
 
 [profile.release]
 panic = "abort"   # Strip expensive panic clean-up logic
