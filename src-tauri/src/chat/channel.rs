@@ -21,6 +21,17 @@ pub struct TicketOpts {
     pub include_neighbors: bool,
 }
 
+impl TicketOpts {
+    /// Yes to everything.
+    pub fn all() -> Self {
+        Self {
+            include_myself: true,
+            include_bootstrap: true,
+            include_neighbors: true,
+        }
+    }
+}
+
 pub struct Channel {
     topic_id: TopicId,
     me: NodeId,
