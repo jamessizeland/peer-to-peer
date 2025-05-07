@@ -1,10 +1,9 @@
 use crate::{
-    chat::{channel::TicketOpts, ChatNode, ChatTicket, NodeId},
+    chat::{channel::TicketOpts, peers::PeerInfo, ChatNode, ChatTicket, NodeId},
     state::AppContext,
     // utils::get_store,
 };
 use anyhow::anyhow;
-use iroh::endpoint::RemoteInfo;
 
 #[tauri::command]
 /// Initialize the Application Context from disk.
@@ -212,12 +211,8 @@ pub async fn disconnect(
 
 #[tauri::command]
 /// Returns information about all the remote endpoints this endpoint knows about
-pub async fn get_peers(state: tauri::State<'_, AppContext>) -> tauri::Result<Vec<RemoteInfo>> {
-    let node = state.node.lock().await;
-    match node.as_ref() {
-        Some(chat_node) => Ok(chat_node.remote_info()),
-        None => Err(anyhow!("Node not initialized").into()), // Or return Ok(vec![]) if preferred
-    }
+pub async fn get_peers(state: tauri::State<'_, AppContext>) -> tauri::Result<Vec<PeerInfo>> {
+    Ok(state.get_peers().await)
 }
 
 #[tauri::command]

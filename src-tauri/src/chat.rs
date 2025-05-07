@@ -1,6 +1,7 @@
 pub mod channel;
 mod event;
 mod message;
+pub mod peers;
 mod sender;
 mod ticket;
 
@@ -65,6 +66,7 @@ impl ChatNode {
         self.router.endpoint().node_id()
     }
 
+    #[allow(unused)]
     /// Returns information about all the remote nodes this [`Endpoint`] knows about.
     pub fn remote_info(&self) -> Vec<RemoteInfo> {
         self.router

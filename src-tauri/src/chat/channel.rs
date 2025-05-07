@@ -7,18 +7,11 @@ use std::{
 use super::{event::Event, sender::ChatSender, ChatNode, ChatTicket};
 pub use iroh::NodeId;
 pub use iroh_gossip::proto::TopicId;
-use n0_future::{boxed::BoxStream, time::Duration, StreamExt as _};
+use n0_future::{boxed::BoxStream, StreamExt as _};
 use serde::{Deserialize, Serialize};
 
 // TODO check if this type is correct, example uses wasm_streams::readable::sys::ReadableStream;
 type ChatReceiver = BoxStream<anyhow::Result<Event>>;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PeerInfo {
-    pub node_id: NodeId,
-    pub nickname: String,
-    pub last_active: Duration,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -66,6 +59,7 @@ impl Channel {
         self.topic_id.to_string()
     }
 
+    #[allow(unused)]
     pub fn neighbors(&self) -> Vec<String> {
         self.neighbors
             .lock()

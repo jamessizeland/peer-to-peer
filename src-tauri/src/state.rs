@@ -1,11 +1,13 @@
 use crate::chat::{
     self,
     channel::{Channel, TicketOpts},
+    peers::PeerInfo,
     ChatNode, ChatSender, Event,
 };
 use anyhow::anyhow;
+use iroh::NodeId;
 use n0_future::{task::AbortOnDropHandle, StreamExt as _};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use tauri::{AppHandle, Emitter as _};
 use tokio::sync::Mutex as TokioMutex;
 
@@ -32,6 +34,7 @@ pub struct AppContext {
     pub nickname: Arc<TokioMutex<Option<String>>>, // Nickname needs to be shared
     active_channel: Arc<TokioMutex<Option<ActiveChannel>>>,
     pub latest_ticket: Arc<TokioMutex<Option<String>>>,
+    peers: Arc<TokioMutex<HashMap<NodeId, PeerInfo>>>,
 }
 
 impl AppContext {
@@ -42,7 +45,13 @@ impl AppContext {
             nickname: Arc::new(TokioMutex::new(None)),
             active_channel: Arc::new(TokioMutex::new(None)),
             latest_ticket: Arc::new(TokioMutex::new(None)),
+            peers: Arc::new(TokioMutex::new(HashMap::new())),
         }
+    }
+    /// Return a list of the known members of this Gossip Swarm.
+    pub async fn get_peers(&self) -> Vec<PeerInfo> {
+        let peers = self.peers.lock().await;
+        peers.values().cloned().collect()
     }
     /// Get the active channel's topic ID.
     pub async fn get_topic_id(&self) -> anyhow::Result<String> {
@@ -92,7 +101,7 @@ impl AppContext {
         receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
     ) -> anyhow::Result<String> {
         // Spawn the event listener task
-        let receiver_handle = spawn_event_listener(app_handle, receiver);
+        let receiver_handle = self.spawn_event_listener(app_handle, receiver);
         // Store the active channel info
         *self.active_channel.lock().await =
             Some(ActiveChannel::new(domain_channel, receiver_handle));
@@ -104,38 +113,38 @@ impl AppContext {
         );
         Ok(topic_id_str)
     }
-}
-
-/// Spawns a background task to listen for chat events and emit them to the frontend.
-fn spawn_event_listener(
-    app: tauri::AppHandle,
-    mut receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
-) -> AbortOnDropHandle<()> {
-    AbortOnDropHandle::new(n0_future::task::spawn(async move {
-        loop {
-            match receiver.next().await {
-                Some(Ok(event)) => {
-                    if let Err(e) = app.emit("chat-event", &event) {
-                        tracing::error!("Failed to emit event to frontend: {}", e);
+    /// Spawns a background task to listen for chat events and emit them to the frontend.
+    fn spawn_event_listener(
+        &self,
+        app: tauri::AppHandle,
+        mut receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
+    ) -> AbortOnDropHandle<()> {
+        AbortOnDropHandle::new(n0_future::task::spawn(async move {
+            loop {
+                match receiver.next().await {
+                    Some(Ok(event)) => {
+                        if let Err(e) = app.emit("chat-event", &event) {
+                            tracing::error!("Failed to emit event to frontend: {}", e);
+                        }
+                    }
+                    Some(Err(e)) => {
+                        tracing::error!("Error receiving chat event: {}", e);
+                        // Optionally emit an error event to the frontend
+                        let _ = app.emit(
+                            "chat-error",
+                            Event::Errorred {
+                                message: e.to_string(),
+                            },
+                        );
+                        break; // Stop listening on error
+                    }
+                    None => {
+                        tracing::info!("Chat event stream ended.");
+                        let _ = app.emit("chat-event", Event::Disconnected);
+                        break; // Stop listening when the stream ends
                     }
                 }
-                Some(Err(e)) => {
-                    tracing::error!("Error receiving chat event: {}", e);
-                    // Optionally emit an error event to the frontend
-                    let _ = app.emit(
-                        "chat-error",
-                        Event::Errorred {
-                            message: e.to_string(),
-                        },
-                    );
-                    break; // Stop listening on error
-                }
-                None => {
-                    tracing::info!("Chat event stream ended.");
-                    let _ = app.emit("chat-event", Event::Lagged); // Or a custom "Disconnected" event
-                    break; // Stop listening when the stream ends
-                }
             }
-        }
-    }))
+        }))
+    }
 }

@@ -38,6 +38,8 @@ pub enum Event {
     Errorred {
         message: String,
     },
+    #[serde(rename_all = "camelCase")]
+    Disconnected,
 }
 
 impl TryFrom<iroh_gossip::net::Event> for Event {
