@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use iroh::NodeId;
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter as _};
 
 use crate::utils::get_timestamp;
 
@@ -15,12 +16,18 @@ impl PeerMap {
         self.0.values().cloned().collect()
     }
     /// Update the activity of the peers list. Returns a list of updated peers if updated.
-    pub fn update(&mut self, event: Option<&Event>) -> Option<Vec<PeerInfo>> {
+    pub fn update(
+        &mut self,
+        event: Option<&Event>,
+        new_starters: &mut HashSet<NodeId>,
+        app: &AppHandle,
+    ) {
         let before = self.to_vec();
         let map = &mut self.0;
         match event {
             Some(Event::Joined { neighbors }) => {
                 for &id in neighbors {
+                    new_starters.insert(id);
                     map.entry(id)
                         .and_modify(|peer| {
                             peer.status = PeerStatus::Online;
@@ -34,6 +41,11 @@ impl PeerMap {
                 nickname,
                 sent_timestamp,
             }) => {
+                if new_starters.remove(id) {
+                    if let Err(e) = app.emit("peers-new", nickname) {
+                        tracing::error!("Failed to emit event to frontend: {}", e);
+                    }
+                }
                 map.entry(*id)
                     .and_modify(|peer| {
                         peer.nickname = nickname.clone();
@@ -54,13 +66,13 @@ impl PeerMap {
                     }
                 }
             }
-            _ => return None, // ignore other events for now,
+            _ => return, // ignore other events for now,
         }
         let after = self.to_vec();
         if before != after {
-            Some(after)
-        } else {
-            None
+            if let Err(e) = app.emit("peers-event", after) {
+                tracing::error!("Failed to emit event to frontend: {}", e);
+            }
         }
     }
 }

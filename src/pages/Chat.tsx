@@ -18,26 +18,22 @@ export function ChatPage() {
       console.log(event.payload);
       setNeighbours(event.payload);
     });
+    const welcomePeersRef = listen<String>("peers-new", async (event) => {
+      notify(`${event.payload} joined the room`);
+    });
 
     const eventsRef = listen<ChatEvent>("chat-event", async (event) => {
       console.log(event);
       setEventLog((eventLog) => [...eventLog, event.payload]);
-      switch (event.payload.type) {
-        case "messageReceived":
-          const message = event.payload;
-          setMessages((messages) => [...messages, message]);
-          break;
-        case "joined":
-          const peer = event.payload;
-          peer.neighbors.forEach((n) => {
-            notify(`${n} joined the room`);
-          });
-          break;
+      if (event.payload.type === "messageReceived") {
+        const message = event.payload;
+        setMessages((messages) => [...messages, message]);
       }
     });
     return () => {
       updatePeersRef.then((drop) => drop());
       eventsRef.then((drop) => drop());
+      welcomePeersRef.then((drop) => drop());
     };
   }, []);
 
