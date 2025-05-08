@@ -12,7 +12,7 @@ const TopBar: React.FC<{
     <div className="w-screen flex justify-between p-1">
       <button
         type="button"
-        className="text-2xl w-15 btn btn-outline btn-accent"
+        className="text-2xl w-15 btn btn-accent"
         onClick={async () => {
           await leaveRoom();
           location.href = "/lobby";
@@ -26,7 +26,7 @@ const TopBar: React.FC<{
       </div>
       <button
         type="button"
-        className="text-2xl w-15 btn btn-outline btn-accent"
+        className="text-2xl w-15 btn btn-accent"
         onClick={() => {
           openEventLog();
         }}

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { CiLogin, CiPower, CiShare1 } from "react-icons/ci";
-import { GiExitDoor } from "react-icons/gi";
-import { GrNodes } from "react-icons/gr";
+import { CiLogin, CiShare1 } from "react-icons/ci";
 import {
   createRoom,
   joinRoom,

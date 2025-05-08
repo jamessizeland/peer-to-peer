@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { GrClose } from "react-icons/gr";
 import { ChatEvent } from "types/events";
 
 interface EventLogModalProps {
@@ -69,7 +70,7 @@ const EventLogModal: React.FC<EventLogModalProps> = ({
         </div>
         <div className="modal-action flex justify-end">
           <button className="btn btn-accent" onClick={onClose}>
-            Close
+            Close <GrClose />
           </button>
         </div>
       </div>
