@@ -66,7 +66,17 @@ const LobbyForm: React.FC = () => {
           )}
         </button>
         {rejoinTicket ? (
-          <button disabled={!nickname} type="button" className="btn btn-accent">
+          <button
+            disabled={!nickname}
+            type="button"
+            className="btn btn-accent"
+            onClick={async () => {
+              if (!nickname) return;
+              if (await joinRoom(rejoinTicket, nickname)) {
+                window.location.href = "/chat";
+              }
+            }}
+          >
             Rejoin Room <CiLogin />
           </button>
         ) : null}
