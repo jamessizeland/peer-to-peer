@@ -27,11 +27,11 @@ jobs:
             args: "--target aarch64-apple-darwin"
           - platform: "macos-latest" # for Intel based macs.
             args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+          - platform: "ubuntu-24.04" # for Tauri v1 you could replace this with ubuntu-20.04.
             args: ""
           - platform: "windows-latest"
             args: ""
-          - platform: "ubuntu-22.04" # For Android, also use a standard Ubuntu runner
+          - platform: "ubuntu-24.04" # For Android, also use a standard Ubuntu runner
             args: "--target aarch64-linux-android"
 
     runs-on: ${{ matrix.platform }}
@@ -50,8 +50,8 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: install dependencies (ubuntu only)
-        # Only run for the Linux desktop build, not the Android build (which also uses ubuntu-22.04 runner)
-        if: matrix.platform == 'ubuntu-22.04' && matrix.args == ''
+        # Only run for the Linux desktop build, not the Android build (which also uses ubuntu-24.04 runner)
+        if: matrix.platform == 'ubuntu-24.04' && matrix.args == ''
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
