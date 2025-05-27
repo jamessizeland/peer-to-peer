@@ -1,9 +1,6 @@
-name: "publish"
+name: "publish desktop"
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -23,17 +20,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - platform: "macos-latest" # for Arm based macs (M1 and above).
-          #   args: "--target aarch64-apple-darwin"
-          # - platform: "macos-latest" # for Intel based macs.
-          #   args: "--target x86_64-apple-darwin"
-          # - platform: "ubuntu-24.04" # for Tauri v1 you could replace this with ubuntu-20.04.
-          #   args: ""
-          # - platform: "windows-latest"
-          #   args: ""
-          - platform: "ubuntu-24.04" # For Android, also use a standard Ubuntu runner
-            args: "--target aarch64-linux-android"
-            build_type: "android"
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-24.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -56,51 +50,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      # --- Android Specific Setup ---
-      - name: Set up JDK
-        if: matrix.build_type == 'android'
-        uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: "17"
-      - name: setup Android SDK and NDK
-        # Condition on the specific Android build args
-        if: matrix.build_type == 'android'
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 12266719
-      - name: Configure Cargo and Environment for Android
-        if: matrix.build_type == 'android'
-        env:
-          # ANDROID_NDK_HOME is set by `android-actions/setup-android`
-          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_HOME }} # Make it available to this step
-        run: |
-          echo "ANDROID_NDK_HOME is $ANDROID_NDK_HOME" # Verify it's set
-          echo "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
-
-          # Create .cargo/config.toml - This is the robust way
-          mkdir -p .cargo
-          cat << EOF > .cargo/config.toml
-          [target.aarch64-linux-android]
-          ar = "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar"
-          # Use API level 21 or your project's minSdk
-          linker = "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
-          EOF
-          echo "Created .cargo/config.toml:"
-          cat .cargo/config.toml
-      - name: setup Android signing
-        # Condition on the specific Android build args
-        if: matrix.build_type == 'android'
-        run: |
-          rustup target add aarch64-linux-android
-          cd src-tauri/gen/android
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
-          echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
-          base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > $RUNNER_TEMP/keystore.jks
-          echo "storeFile=$RUNNER_TEMP/keystore.jks" >> keystore.properties
-          echo "Keystore properties created."
-          cd ../../.. # Go back to root
 
       - name: install frontend dependencies
         run: bun install # change this to npm, pnpm or bun depending on which one you use.
