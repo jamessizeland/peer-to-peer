@@ -66,6 +66,8 @@ jobs:
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
         run: |
+          sudo apt-get update
+          sudo apt-get install -y  clang
           rustup target add aarch64-linux-android
           cd src-tauri/gen/android
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
