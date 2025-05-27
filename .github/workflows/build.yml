@@ -58,10 +58,17 @@ jobs:
         # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
         # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
       - name: setup Android SDK and NDK
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12266719 # v16
       - name: setup Android signing
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
