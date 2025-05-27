@@ -61,15 +61,13 @@ jobs:
       - name: setup Android SDK and NDK
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
-        uses: android-actions/setup-android@v2
-        with:
-          ndk-version: "25.2.9519653" # Specify NDK version (e.g., r25c)
-          api-level: 30 # Specify API level (e.g., Android 11 / API 30)
+        uses: android-actions/setup-android@v3
       - name: setup Android signing
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
         run: |
           rustup target add aarch64-linux-android
+          echo "$ANDROID_HOME/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
           cd src-tauri/gen/android
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
           echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
