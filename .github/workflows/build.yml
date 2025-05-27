@@ -28,7 +28,7 @@ jobs:
             args: ""
           - platform: "windows-latest"
             args: ""
-          - platform: "ubuntu-22.04-android"
+          - platform: "ubuntu-22.04" # For Android, also use a standard Ubuntu runner
             args: "--target aarch64-linux-android"
 
     runs-on: ${{ matrix.platform }}
@@ -47,7 +47,8 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+        # Only run for the Linux desktop build, not the Android build (which also uses ubuntu-22.04 runner)
+        if: matrix.platform == 'ubuntu-22.04' && matrix.args == ''
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -55,14 +56,16 @@ jobs:
         # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
       - name: setup Android SDK and NDK
-        if: matrix.platform == 'ubuntu-22.04-android'
+        # Condition on the specific Android build args
+        if: matrix.args == '--target aarch64-linux-android'
         uses: android-actions/setup-android@v2
         with:
           api-level: 30
           ndk-version: 21.4.7075529
 
       - name: setup Android signing
-        if: matrix.platform == 'ubuntu-22.04-android'
+        # Condition on the specific Android build args
+        if: matrix.args == '--target aarch64-linux-android'
         run: |
           cd src-tauri/gen/android
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
