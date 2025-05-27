@@ -23,14 +23,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest" # for Arm based macs (M1 and above).
-            args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
-            args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-24.04" # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: ""
-          - platform: "windows-latest"
-            args: ""
+          # - platform: "macos-latest" # for Arm based macs (M1 and above).
+          #   args: "--target aarch64-apple-darwin"
+          # - platform: "macos-latest" # for Intel based macs.
+          #   args: "--target x86_64-apple-darwin"
+          # - platform: "ubuntu-24.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+          #   args: ""
+          # - platform: "windows-latest"
+          #   args: ""
           - platform: "ubuntu-24.04" # For Android, also use a standard Ubuntu runner
             args: "--target aarch64-linux-android"
 
@@ -61,13 +61,14 @@ jobs:
       - name: setup Android SDK and NDK
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v2
+        with:
+          ndk-version: "25.2.9519653" # Specify NDK version (e.g., r25c)
+          api-level: 30 # Specify API level (e.g., Android 11 / API 30)
       - name: setup Android signing
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y  clang
           rustup target add aarch64-linux-android
           cd src-tauri/gen/android
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
