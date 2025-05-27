@@ -7,9 +7,6 @@ on:
     types:
       - closed
 
-# This is the example from the readme.
-# On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
-
 jobs:
   publish-tauri:
     if: ${{ github.event.pull_request.merged }} && github.repository_owner == 'jamessizeland' # This is to ensure that only the owner can publish the app.

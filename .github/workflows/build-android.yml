@@ -1,9 +1,6 @@
-name: "publish"
+name: "publish android"
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
