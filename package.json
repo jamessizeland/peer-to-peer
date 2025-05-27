@@ -1,7 +1,7 @@
 {
   "name": "peer-to-peer",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "type": "module",
   "repository": "https://github.com/jamessizeland/peer-to-peer",
   "scripts": {
@@ -16,7 +16,7 @@
     "@tauri-apps/api": "^2.4.1",
     "@tauri-apps/plugin-clipboard-manager": "~2",
     "@tauri-apps/plugin-dialog": "^2.2.1",
-    "@tauri-apps/plugin-fs": "~2.2.1",
+    "@tauri-apps/plugin-fs": "~2.3",
     "@tauri-apps/plugin-opener": "^2.2.6",
     "@tauri-apps/plugin-os": "~2.2.1",
     "@types/node": "^22.14.1",
