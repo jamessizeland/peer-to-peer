@@ -58,23 +58,21 @@ jobs:
         # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
         # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: "17"
-          distribution: "temurin"
       - name: setup Android SDK and NDK
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
         uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 12266719 # v16
       - name: setup Android signing
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
         run: |
           rustup target add aarch64-linux-android
-          echo "$ANDROID_HOME/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+          echo "--- Verifying NDK tools in PATH ---"
+          echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
+          echo "PATH is: $PATH"
+          which aarch64-linux-android-clang || echo "WARNING: aarch64-linux-android-clang not found in PATH"
+          which aarch64-linux-android-ar || echo "WARNING: aarch64-linux-android-ar not found in PATH"
+          echo "--- End Verifying NDK tools ---"
           cd src-tauri/gen/android
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
           echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
