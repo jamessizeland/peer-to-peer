@@ -61,11 +61,7 @@ jobs:
       - name: setup Android SDK and NDK
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 30
-          ndk-version: 21.4.7075529
-
+        uses: android-actions/setup-android@v3
       - name: setup Android signing
         # Condition on the specific Android build args
         if: matrix.args == '--target aarch64-linux-android'
