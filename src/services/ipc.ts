@@ -1,16 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-
 import { notifyError } from "./notifications";
 import { PeerInfo } from "types";
-
-/** Initialize Backend context from persistent store */
-export async function initContext(): Promise<void> {
-  try {
-    await invoke("init_context");
-  } catch (e) {
-    notifyError(`Failed to initialize app context: ${e}`, "StoreError");
-  }
-}
 
 /** Create a new room and return the information required to send
  an out-of-band Join Code to others to connect. */

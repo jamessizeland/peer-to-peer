@@ -1,19 +1,13 @@
-import { listen } from "@tauri-apps/api/event";
 import Honeycomb from "components/Layout/loader";
 import { useEffect } from "react";
 import ChatIcon from "assets/chat.png";
 
 export const SplashPage: React.FC = () => {
   useEffect(() => {
-    // wait for backend to tell us it's finished setting up and loading info from persistent storage.
-    const listenRef = listen("backend-init", async () => {
-      setTimeout(() => {
-        location.href = "/lobby";
-      }, 1000);
-    });
-    return () => {
-      listenRef.then((drop) => drop());
-    };
+    const timerRef = setTimeout(() => {
+      location.href = "/lobby";
+    }, 1000);
+    return () => clearTimeout(timerRef);
   }, []);
   return (
     <div className="flex items-center justify-center h-screen w-screen flex-col space-y-6">
