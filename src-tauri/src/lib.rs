@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-#[cfg(debug_assertions)] // only include this code on debug builds
 use tauri::Manager as _;
 use utils::AppStore;
 

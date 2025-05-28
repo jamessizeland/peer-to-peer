@@ -1,5 +1,5 @@
 use crate::{
-    chat::{channel::TicketOpts, peers::PeerInfo, ChatTicket, NodeId},
+    chat::{channel::TicketOpts, ChatTicket, NodeId},
     state::AppContext,
     utils::AppStore,
 };
