@@ -1,6 +1,6 @@
 [package]
 name = "peer-to-peer"
-version = "0.3.4"
+version = "0.3.5"
 description = "A Peer to Peer Tauri Chat App"
 authors = ["you"]
 edition = "2021"
