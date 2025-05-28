@@ -64,8 +64,6 @@ pub fn run() {
             ipc::send_message,
             ipc::leave_room,
             ipc::get_latest_ticket,
-            ipc::disconnect,
-            ipc::get_peers,
             ipc::get_node_id,
             ipc::set_nickname,
             ipc::get_nickname,

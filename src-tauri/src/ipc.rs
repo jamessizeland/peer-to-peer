@@ -146,34 +146,6 @@ pub async fn leave_room(
 }
 
 #[tauri::command]
-/// Disconnect from the session
-pub async fn disconnect(
-    state: tauri::State<'_, AppContext>,
-    app: tauri::AppHandle,
-) -> tauri::Result<()> {
-    // First, leave any active room
-    leave_room(state.clone(), app).await?;
-
-    // Then, shut down the node
-    let mut node_guard = state.node.lock().await;
-    if let Some(node) = node_guard.take() {
-        drop(node_guard); // <- is this needed?
-        node.shutdown().await;
-        tracing::info!("Iroh node shut down.");
-    } else {
-        tracing::debug!("Disconnect called, but node was not running.");
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-/// Returns information about all the remote endpoints this endpoint knows about
-pub async fn get_peers(state: tauri::State<'_, AppContext>) -> tauri::Result<Vec<PeerInfo>> {
-    Ok(state.get_peers().await)
-}
-
-#[tauri::command]
 /// Returns the node id of this node
 pub async fn get_node_id(state: tauri::State<'_, AppContext>) -> tauri::Result<NodeId> {
     let node = state.node.lock().await;
