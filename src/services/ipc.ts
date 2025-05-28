@@ -1,16 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-
 import { notifyError } from "./notifications";
-import { PeerInfo } from "types";
-
-/** Initialize Backend context from persistent store */
-export async function initContext(): Promise<void> {
-  try {
-    await invoke("init_context");
-  } catch (e) {
-    notifyError(`Failed to initialize app context: ${e}`, "StoreError");
-  }
-}
 
 /** Create a new room and return the information required to send
  an out-of-band Join Code to others to connect. */
@@ -82,25 +71,6 @@ export async function leaveRoom(): Promise<void> {
     await invoke("leave_room");
   } catch (e) {
     notifyError(`Failed to leave room: ${e}`, "RoomLeaveError");
-  }
-}
-
-/** Disconnect from the session. */
-export async function disconnect(): Promise<void> {
-  try {
-    await invoke("disconnect");
-  } catch (e) {
-    notifyError(`Failed to disconnect: ${e}`, "DisconnectError");
-  }
-}
-
-/** Returns information about all the remote endpoints this endpoint knows about. */
-export async function getPeers(): Promise<PeerInfo[]> {
-  try {
-    return await invoke<PeerInfo[]>("get_peers");
-  } catch (e) {
-    notifyError(`Failed to get peers: ${e}`, "PeersGetError");
-    return [];
   }
 }
 

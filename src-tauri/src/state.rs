@@ -35,7 +35,6 @@ impl ActiveChannel {
 pub struct AppContext {
     // The iroh client instance used for all interactions. Option<> because it's initialized async.
     pub node: Arc<TokioMutex<Option<ChatNode>>>,
-    pub nickname: Arc<TokioMutex<Option<String>>>, // Nickname needs to be shared
     active_channel: Arc<TokioMutex<Option<ActiveChannel>>>,
     pub latest_ticket: Arc<TokioMutex<Option<String>>>,
     peers: Arc<TokioMutex<PeerMap>>,
@@ -46,7 +45,6 @@ impl AppContext {
     pub fn new() -> Self {
         Self {
             node: Arc::new(TokioMutex::new(None)),
-            nickname: Arc::new(TokioMutex::new(None)),
             active_channel: Arc::new(TokioMutex::new(None)),
             latest_ticket: Arc::new(TokioMutex::new(None)),
             peers: Arc::new(TokioMutex::new(Default::default())),
@@ -78,16 +76,6 @@ impl AppContext {
             None => Err(anyhow!("Could not get sender. No active channel.")),
         }
     }
-    /// Set the nickname of the active node.
-    pub async fn set_nickname(&self, nickname: String) -> anyhow::Result<()> {
-        match self.active_channel.lock().await.as_ref() {
-            Some(channel) => {
-                channel.inner.sender().set_nickname(nickname);
-                Ok(())
-            }
-            None => Err(anyhow!("Could not set nickname. No active channel.")),
-        }
-    }
     /// Close our connection to this room.  Returns deactivated topic ID.
     pub async fn drop_channel(&self) -> anyhow::Result<Option<String>> {
         match self.active_channel.lock().await.take() {
@@ -101,14 +89,19 @@ impl AppContext {
     pub async fn start_channel(
         &self,
         domain_channel: Channel,
-        app_handle: AppHandle,
+        app_handle: &AppHandle,
         receiver: n0_future::stream::Boxed<anyhow::Result<Event>>,
+        nickname: &str,
     ) -> anyhow::Result<String> {
         // Spawn the event listener task
-        let receiver_handle = self.spawn_event_listener(app_handle, receiver);
+        let receiver_handle = self.spawn_event_listener(app_handle.clone(), receiver);
+        let active_channel = ActiveChannel::new(domain_channel, receiver_handle);
+        active_channel
+            .inner
+            .sender()
+            .set_nickname(nickname.to_string());
         // Store the active channel info
-        *self.active_channel.lock().await =
-            Some(ActiveChannel::new(domain_channel, receiver_handle));
+        *self.active_channel.lock().await = Some(active_channel);
         // Get the topic_id from the established channel for logging
         let topic_id_str = self.get_topic_id().await?;
         tracing::info!(
@@ -166,7 +159,7 @@ async fn handle_event(
             peers_clone
                 .lock()
                 .await
-                .update(Some(&event), new_starters, &app);
+                .update(Some(&event), new_starters, app);
             // emit a chat-event for each event
             if let Err(e) = app.emit("chat-event", &event) {
                 tracing::error!("Failed to emit event to frontend: {}", e);

@@ -1,6 +1,5 @@
 use std::{
     collections::BTreeSet,
-    pin::Pin,
     sync::{Arc, Mutex},
 };
 
@@ -10,8 +9,7 @@ pub use iroh_gossip::proto::TopicId;
 use n0_future::{boxed::BoxStream, StreamExt as _};
 use serde::{Deserialize, Serialize};
 
-// TODO check if this type is correct, example uses wasm_streams::readable::sys::ReadableStream;
-type ChatReceiver = BoxStream<anyhow::Result<Event>>;
+pub type ChatReceiver = BoxStream<anyhow::Result<Event>>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -82,6 +80,7 @@ impl Channel {
 }
 
 impl ChatNode {
+    /// Create and initialize the channel used for communicating between nodes.
     pub fn generate_channel(
         &self,
         ticket: ChatTicket,
@@ -89,25 +88,7 @@ impl ChatNode {
     ) -> anyhow::Result<Channel> {
         let (sender, receiver) = self.join(&ticket, nickname)?;
         let neighbors = Arc::new(Mutex::new(BTreeSet::new()));
-        let neighbors2 = neighbors.clone();
-        let receiver = receiver.map(move |event| {
-            if let Ok(event) = &event {
-                match event {
-                    Event::Joined { neighbors } => {
-                        neighbors2.lock().unwrap().extend(neighbors.iter().cloned());
-                    }
-                    Event::NeighborUp { node_id } => {
-                        neighbors2.lock().unwrap().insert(*node_id);
-                    }
-                    Event::NeighborDown { node_id } => {
-                        neighbors2.lock().unwrap().remove(node_id);
-                    }
-                    _ => {}
-                }
-            }
-            event
-        });
-        let receiver = Pin::new(Box::new(receiver));
+        let receiver_stream = build_receiver_stream(receiver, neighbors.clone());
 
         // Add ourselves to the ticket.
         let mut ticket = ticket;
@@ -119,8 +100,32 @@ impl ChatNode {
             neighbors,
             me: self.node_id(),
             sender,
-            receiver: Some(receiver),
+            receiver: Some(receiver_stream),
         };
         Ok(topic)
     }
+}
+
+/// Augment the raw ChatReceiver stream with additional logic to manage the list of neighbors.
+fn build_receiver_stream(
+    receiver: ChatReceiver,
+    neighbors: Arc<Mutex<BTreeSet<NodeId>>>,
+) -> BoxStream<anyhow::Result<Event>> {
+    let receiver = receiver.map(move |event| {
+        let mut nodes = neighbors.lock().unwrap();
+        match &event {
+            Ok(Event::Joined { neighbors }) => {
+                nodes.extend(neighbors);
+            }
+            Ok(Event::NeighborUp { node_id }) => {
+                nodes.insert(*node_id);
+            }
+            Ok(Event::NeighborDown { node_id }) => {
+                nodes.remove(node_id);
+            }
+            _ => {}
+        }
+        event
+    });
+    Box::pin(receiver)
 }
