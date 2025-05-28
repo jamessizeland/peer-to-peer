@@ -51,7 +51,7 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
 
       - name: Cache Rust dependencies
         uses: swatinem/rust-cache@v2
@@ -77,8 +77,6 @@ jobs:
       - name: Get Tauri App Version
         id: app-version
         run: |
-          # Ensure jq is available (it usually is on GitHub runners)
-          # sudo apt-get install -y jq # Uncomment if jq is missing
           VERSION=$(jq -r '.package.version // .version' src-tauri/tauri.conf.json)
           echo "version_string=$VERSION" >> $GITHUB_OUTPUT
         shell: bash
