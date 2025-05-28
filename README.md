@@ -1,7 +1,7 @@
 # Iroh/Tauri Peer to Peer Chat App Example
 
 [![publish android](https://github.com/jamessizeland/peer-to-peer/actions/workflows/build-android.yml/badge.svg)](https://github.com/jamessizeland/peer-to-peer/actions/workflows/build-android.yml)
-[![publish desktop](https://github.com/jamessizeland/peer-to-peer/actions/workflows/build.yml/badge.svg)](https://github.com/jamessizeland/peer-to-peer/actions/workflows/build.yml)
+[![publish desktop](https://github.com/jamessizeland/peer-to-peer/actions/workflows/build.yml/badge.svg?event=pull_request)](https://github.com/jamessizeland/peer-to-peer/actions/workflows/build.yml)
 ![MIT/Apache-2.0 licensed](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue?labelColor=1C2C2E&style=flat-square)
 
 ## Overview
