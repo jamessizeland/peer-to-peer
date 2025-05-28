@@ -120,10 +120,8 @@ pub async fn set_nickname(nickname: String, app: tauri::AppHandle) -> tauri::Res
 
 #[tauri::command]
 /// Get the stored nickname for this node.
-pub async fn get_nickname(app: tauri::AppHandle) -> tauri::Result<String> {
-    Ok(AppStore::acquire(&app)?
-        .get_nickname()
-        .ok_or_else(|| anyhow!("No nickname set"))?)
+pub async fn get_nickname(app: tauri::AppHandle) -> tauri::Result<Option<String>> {
+    Ok(AppStore::acquire(&app)?.get_nickname())
 }
 
 #[tauri::command]

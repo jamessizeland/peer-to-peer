@@ -1,6 +1,5 @@
 use std::{
     collections::BTreeSet,
-    pin::Pin,
     sync::{Arc, Mutex},
 };
 
@@ -116,7 +115,7 @@ fn build_receiver_stream(
         let mut nodes = neighbors.lock().unwrap();
         match &event {
             Ok(Event::Joined { neighbors }) => {
-                nodes.extend(neighbors.into_iter());
+                nodes.extend(neighbors);
             }
             Ok(Event::NeighborUp { node_id }) => {
                 nodes.insert(*node_id);
@@ -128,6 +127,5 @@ fn build_receiver_stream(
         }
         event
     });
-    let receiver = Pin::new(Box::new(receiver));
-    receiver
+    Box::pin(receiver)
 }

@@ -18,11 +18,19 @@ impl AppStore {
     pub fn get_nickname(&self) -> Option<String> {
         self.0
             .get("nickname")
-            .map(|val| serde_json::from_value(val).unwrap_or_default())
+            .and_then(|val| serde_json::from_value(val).ok())
     }
     pub fn set_nickname(&self, nickname: &str) -> anyhow::Result<()> {
         self.0.set("nickname", serde_json::to_value(nickname)?);
         Ok(())
+    }
+    /// Return the list of recently visited rooms
+    #[allow(unused)]
+    pub fn get_recent_rooms(&self) -> Vec<String> {
+        self.0
+            .get("visited")
+            .map(|val| serde_json::from_value(val).unwrap_or_default())
+            .unwrap_or_default()
     }
     pub fn get_secret_key(&self) -> anyhow::Result<SecretKey> {
         match self.0.get("key") {

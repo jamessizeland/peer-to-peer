@@ -159,7 +159,7 @@ async fn handle_event(
             peers_clone
                 .lock()
                 .await
-                .update(Some(&event), new_starters, &app);
+                .update(Some(&event), new_starters, app);
             // emit a chat-event for each event
             if let Err(e) = app.emit("chat-event", &event) {
                 tracing::error!("Failed to emit event to frontend: {}", e);
