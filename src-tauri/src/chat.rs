@@ -8,13 +8,13 @@ mod ticket;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
+use channel::ChatReceiver;
 pub use event::Event;
 pub use iroh::NodeId;
 use iroh::{endpoint::RemoteInfo, protocol::Router, SecretKey};
 use iroh_gossip::net::{Gossip, GOSSIP_ALPN};
 use message::{Message, SignedMessage};
 use n0_future::{
-    boxed::BoxStream,
     task::{self, AbortOnDropHandle},
     time::Duration,
     StreamExt,
@@ -82,7 +82,7 @@ impl ChatNode {
         &self,
         ticket: &ChatTicket,
         nickname: String,
-    ) -> Result<(ChatSender, BoxStream<Result<Event>>)> {
+    ) -> Result<(ChatSender, ChatReceiver)> {
         let topic_id = ticket.topic_id;
         let bootstrap = ticket.bootstrap.iter().cloned().collect();
         info!(?bootstrap, "joining {topic_id}");
