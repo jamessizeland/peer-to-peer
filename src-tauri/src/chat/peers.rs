@@ -54,16 +54,32 @@ impl PeerMap {
                     })
                     .or_insert(PeerInfo::new(*id, Some(nickname.clone())));
             }
+            Some(Event::NeighborDown { node_id: id }) => {
+                // node reported to have left the room.
+                map.entry(*id)
+                    .and_modify(|peer| {
+                        peer.status = PeerStatus::Offline;
+                        peer.last_seen = get_timestamp();
+                    })
+                    .or_insert(PeerInfo::new(*id, None));
+            }
+            Some(Event::NeighborUp { node_id: id }) => {
+                // node reported to have rejoined the room
+                map.entry(*id)
+                    .and_modify(|peer| {
+                        peer.status = PeerStatus::Online;
+                        peer.last_seen = get_timestamp();
+                    })
+                    .or_insert(PeerInfo::new(*id, None));
+            }
             None => {
                 // tick at regular intervals to update the peerStatus
                 for peer in map.values_mut() {
                     let millis_since_last_seen =
                         (get_timestamp().saturating_sub(peer.last_seen)) / 1000;
-                    match millis_since_last_seen {
-                        0..=10_000 => peer.status = PeerStatus::Online,
-                        10_001..=30_000 => peer.status = PeerStatus::Away,
-                        _ => peer.status = PeerStatus::Offline,
-                    }
+                    if millis_since_last_seen > 10_000 && peer.status != PeerStatus::Offline {
+                        peer.status = PeerStatus::Away;
+                    };
                 }
             }
             _ => return, // ignore other events for now,

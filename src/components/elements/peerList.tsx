@@ -9,7 +9,7 @@ const PeerInfoDropdown: React.FC<{ peers: PeerInfo[] }> = ({ peers }) => {
   return (
     <div className="dropdown dropdown-center">
       <div tabIndex={0} role="button" className="btn btn-accent">
-        Online: {online().length}
+        Peers: {online().length}
       </div>
       <ul
         tabIndex={0}
