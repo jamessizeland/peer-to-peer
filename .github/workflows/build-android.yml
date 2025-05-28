@@ -77,8 +77,32 @@ jobs:
       - name: Get Tauri App Version
         id: app-version
         run: |
-          VERSION=$(jq -r '.package.version // .version' src-tauri/tauri.conf.json)
-          echo "version_string=$VERSION" >> $GITHUB_OUTPUT
+          CARGO_TOML_PATH="src-tauri/Cargo.toml"
+          echo "Attempting to read version from $CARGO_TOML_PATH"
+
+          if [ ! -f "$CARGO_TOML_PATH" ]; then
+            echo "Error: $CARGO_TOML_PATH not found."
+            exit 1
+          fi
+
+          echo "--- Relevant content from $CARGO_TOML_PATH (looking for 'version = \"...' line) ---"
+          grep '^version = "' "$CARGO_TOML_PATH" || echo "No line starting with 'version = \"' found in $CARGO_TOML_PATH."
+          echo "--- End of relevant content ---"
+
+          # Extract version string from Cargo.toml.
+          # This looks for a line like 'version = "x.y.z"' in the [package] section.
+          VERSION_STRING=$(grep '^version = "' "$CARGO_TOML_PATH" | head -n 1 | sed -e 's/version = "//' -e 's/"//')
+
+          echo "Extracted version_string: '$VERSION_STRING'" # Debug output
+
+          if [ -z "$VERSION_STRING" ] || [ "$VERSION_STRING" = "null" ]; then # Check for empty or literal "null"
+            echo "Error: Version not found or is invalid in $CARGO_TOML_PATH."
+            echo "Please ensure $CARGO_TOML_PATH contains a line like 'version = \"x.y.z\"' (typically under the [package] section)."
+            exit 1
+          fi
+
+          echo "Successfully extracted version: $VERSION_STRING"
+          echo "version_string=$VERSION_STRING" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Rename APK file
