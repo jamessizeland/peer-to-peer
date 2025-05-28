@@ -2,9 +2,9 @@ use anyhow::Result;
 pub use iroh::NodeId;
 use iroh::{PublicKey, SecretKey};
 use iroh_base::Signature;
-
-use n0_future::time::SystemTime;
 use serde::{Deserialize, Serialize};
+
+use crate::utils::get_timestamp;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignedMessage {
@@ -28,10 +28,7 @@ impl SignedMessage {
     }
 
     pub fn sign_and_encode(secret_key: &SecretKey, message: Message) -> Result<Vec<u8>> {
-        let timestamp = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_micros() as u64;
+        let timestamp = get_timestamp();
         let wire_message = WireMessage::VO { timestamp, message };
         let data = postcard::to_stdvec(&wire_message)?;
         let signature = secret_key.sign(&data);
