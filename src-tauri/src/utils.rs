@@ -1,8 +1,10 @@
 use anyhow::Context as _;
 use iroh::SecretKey;
-use std::{sync::Arc, time::SystemTime};
+use std::{collections::HashMap, sync::Arc, time::SystemTime};
 use tauri::Wry;
 use tauri_plugin_store::{Store, StoreExt as _};
+
+use crate::chat::ChatTicket;
 
 pub struct AppStore(Arc<Store<Wry>>);
 
@@ -24,13 +26,41 @@ impl AppStore {
         self.0.set("nickname", serde_json::to_value(nickname)?);
         Ok(())
     }
-    /// Return the list of recently visited rooms
-    #[allow(unused)]
-    pub fn get_recent_rooms(&self) -> Vec<String> {
+    fn get_visited_rooms_inner(&self) -> HashMap<String, (u64, ChatTicket)> {
         self.0
             .get("visited")
             .map(|val| serde_json::from_value(val).unwrap_or_default())
             .unwrap_or_default()
+    }
+    /// Return the list of visited rooms in order of most recently visited
+    pub fn get_visited_rooms(&self) -> Vec<ChatTicket> {
+        let rooms = self.get_visited_rooms_inner();
+        let mut list: Vec<_> = rooms.values().cloned().collect();
+        list.sort_by_key(|room| room.0);
+        dbg!(list.into_iter().map(|room| room.1).collect())
+    }
+    /// Add or update a room in the list of visited rooms
+    pub fn update_visited_room(&self, ticket: ChatTicket) -> anyhow::Result<()> {
+        let visited = get_timestamp();
+        let mut rooms = self.get_visited_rooms_inner();
+        rooms
+            .entry(ticket.topic_id.to_string())
+            .and_modify(|(v, t)| {
+                *v = visited;
+                *t = ticket.clone();
+            })
+            .or_insert((visited, ticket));
+        self.0.set("visited", serde_json::to_value(rooms)?);
+        Ok(())
+    }
+    /// Delete a room from the list of visited rooms
+    pub fn delete_visited_room(&self, topic_id: &str) -> anyhow::Result<()> {
+        let mut rooms = self.get_visited_rooms_inner();
+        if rooms.remove_entry(topic_id).is_none() {
+            tracing::info!("{} not found when deleting rooms", topic_id);
+        };
+        self.0.set("visited", serde_json::to_value(rooms)?);
+        Ok(())
     }
     pub fn get_secret_key(&self) -> anyhow::Result<SecretKey> {
         match self.0.get("key") {

@@ -3,11 +3,11 @@ import Modal, { ModalProps } from "components/elements/modal";
 const AboutModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <p className="backdrop-opacity-100 p-4 m-4 border rounded-md border-accent max-h-fit">
+      <p className="backdrop-opacity-100 p-4 m-4 border rounded-md border-secondary max-h-fit">
         This is a peer to peer messaging app using the{" "}
         <a
           target="_blank"
-          className="link link-secondary"
+          className="link link-accent"
           href="https://www.iroh.computer/proto/iroh-gossip"
         >
           Iroh Gossip Protocol
@@ -20,7 +20,7 @@ const AboutModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
         This is a proof of concept based heavily on the{" "}
         <a
           target="_blank"
-          className="link link-secondary"
+          className="link link-accent"
           href="https://github.com/n0-computer/iroh-examples/tree/main/browser-chat"
         >
           Iroh chat example
@@ -28,7 +28,7 @@ const AboutModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
         and modified for a{" "}
         <a
           target="_blank"
-          className="link link-secondary"
+          className="link link-accent"
           href="https://tauri.app/"
         >
           Tauri App

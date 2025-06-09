@@ -12,10 +12,11 @@ const LobbyForm: React.FC<ModalProps> = ({ isOpen, onClose }) => {
     getNickname().then((name) => {
       if (name) setNickname(name);
     });
-  }, []);
+  }, [isOpen]);
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="space-y-4 flex flex-col items-center p-4 border rounded-md border-secondary">
+        <p>{nickname}</p>
         <form
           className="flex flex-col space-y-2 items-center"
           onSubmit={async (e) => {

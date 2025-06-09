@@ -49,7 +49,7 @@ impl Channel {
         self.receiver.take()
     }
 
-    pub fn ticket(&self, opts: TicketOpts) -> anyhow::Result<String> {
+    pub fn ticket(&self, opts: TicketOpts) -> anyhow::Result<ChatTicket> {
         let mut ticket = ChatTicket::new(self.topic_id, &self.name);
         if opts.include_myself {
             ticket.bootstrap.insert(self.me);
@@ -62,7 +62,7 @@ impl Channel {
             ticket.bootstrap.extend(neighbors.iter().copied())
         }
         tracing::info!("opts {:?} ticket {:?}", opts, ticket);
-        Ok(ticket.serialize())
+        Ok(ticket)
     }
 
     pub fn id(&self) -> String {

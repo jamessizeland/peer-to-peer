@@ -48,8 +48,9 @@ pub async fn create_room(
     tracing::info!("Created and joined room: {}", topic_id_str);
 
     // Generate ticket string from the Channel instance to be shared
-    let ticket_token = state.generate_ticket(TicketOpts::all()).await?;
-
+    let ticket = state.generate_ticket(TicketOpts::all()).await?;
+    store.update_visited_room(ticket.clone())?;
+    let ticket_token = ticket.serialize();
     *state.latest_ticket.lock().await = Some(ticket_token.clone());
     Ok(ticket_token)
 }
@@ -94,7 +95,9 @@ pub async fn join_room(
         "Active channel SET in join_room for topic: {}",
         topic_id_str
     );
-    AppStore::acquire(&app)?.set_nickname(&nickname)?;
+    let store = AppStore::acquire(&app)?;
+    store.set_nickname(&nickname)?;
+    store.update_visited_room(chat_ticket)?;
     tracing::info!("Joined room: {}", topic_id_str);
     Ok(())
 }
@@ -122,24 +125,35 @@ pub async fn set_nickname(nickname: String, app: tauri::AppHandle) -> tauri::Res
 #[tauri::command]
 /// Get the stored nickname for this node.
 pub async fn get_nickname(app: tauri::AppHandle) -> tauri::Result<Option<String>> {
-    Ok(AppStore::acquire(&app)?.get_nickname())
+    let nickname = AppStore::acquire(&app)?.get_nickname();
+    tracing::info!("Nickname retrieved as: {:?}", &nickname);
+    Ok(nickname)
 }
 
 #[tauri::command]
 /// Get the stored room ticket string
 pub async fn get_latest_ticket(
     state: tauri::State<'_, AppContext>,
-) -> tauri::Result<Option<String>> {
+) -> tauri::Result<Option<(String, String)>> {
     let ticket_guard = state.latest_ticket.lock().await;
-    Ok(ticket_guard.clone())
+    match ticket_guard.as_ref() {
+        Some(ticket_string) => {
+            let ticket = ChatTicket::deserialize(ticket_string)?;
+            Ok(Some((ticket_string.clone(), ticket.name)))
+        }
+        None => Ok(None),
+    }
 }
 
 #[tauri::command]
 /// Leave the currently joined room
 pub async fn leave_room(
     state: tauri::State<'_, AppContext>,
-    _app: tauri::AppHandle,
+    app: tauri::AppHandle,
 ) -> tauri::Result<()> {
+    if let Ok(ticket) = state.generate_ticket(TicketOpts::all()).await {
+        AppStore::acquire(&app)?.update_visited_room(ticket)?;
+    };
     if let Some(id) = state.drop_channel().await? {
         tracing::info!("Left room: {}", id);
     };
@@ -153,4 +167,33 @@ pub async fn get_node_id(state: tauri::State<'_, AppContext>) -> tauri::Result<N
     node.as_ref()
         .map(|chat_node| chat_node.node_id())
         .ok_or(anyhow!("Node not initialized").into())
+}
+
+#[tauri::command]
+/// Returns the list of visited rooms in order of most recently visited
+pub async fn get_visited_rooms(
+    app: tauri::AppHandle,
+) -> tauri::Result<Vec<(String, String, String)>> {
+    let store = AppStore::acquire(&app)?;
+    Ok(store
+        .get_visited_rooms()
+        .iter()
+        .map(|ticket| {
+            (
+                ticket.topic_id.to_string(),
+                ticket.name.clone(),
+                ticket.serialize(),
+            )
+        })
+        .rev()
+        .collect())
+}
+
+#[tauri::command]
+/// Remove a visited room by room topic_id
+pub async fn delete_visited_room(topic: String, app: tauri::AppHandle) -> tauri::Result<()> {
+    let store = AppStore::acquire(&app)?;
+    tracing::info!("deleting topic: {}", topic);
+    store.delete_visited_room(&topic)?;
+    Ok(())
 }

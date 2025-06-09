@@ -6,7 +6,7 @@ use iroh_base::ticket::Ticket;
 pub use iroh_gossip::proto::TopicId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ChatTicket {
     pub topic_id: TopicId,
     pub name: String,
@@ -14,6 +14,7 @@ pub struct ChatTicket {
 }
 
 impl ChatTicket {
+    #[allow(unused)]
     fn new_random() -> Self {
         let topic_id = TopicId::from_bytes(rand::random());
         Self::new(topic_id, "anonymous")

@@ -6,12 +6,22 @@ import EventLogModal from "components/features/eventLog";
 import Messages from "components/features/messages";
 import { notify } from "services/notifications";
 import { PeerInfo } from "types";
+import { getLatestTicket } from "services/ipc";
 
 export function ChatPage() {
   const [messages, setMessages] = useState<MessageReceivedEvent[]>([]);
   const [eventLog, setEventLog] = useState<ChatEvent[]>([]);
   const [neighbours, setNeighbours] = useState<PeerInfo[]>([]);
   const [openLog, setOpenLog] = useState<boolean>(false);
+  const [name, setName] = useState<string>("");
+
+  useEffect(() => {
+    getLatestTicket().then((ticket) => {
+      if (ticket) {
+        setName(ticket[1]);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const updatePeersRef = listen<PeerInfo[]>("peers-event", async (event) => {
@@ -45,6 +55,7 @@ export function ChatPage() {
         isOpen={openLog}
         onClose={() => setOpenLog(false)}
       />
+      <h1 className="text-xl font-bold">{name}</h1>
       <Messages messages={messages} />
     </div>
   );
