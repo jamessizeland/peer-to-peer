@@ -1,14 +1,8 @@
 import React from "react";
 import { ChatEvent } from "types/events";
-import Modal from "../elements/modal";
+import Modal, { ModalProps } from "../elements/modal";
 
-interface EventLogModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  eventLog: ChatEvent[];
-}
-
-const EventLogModal: React.FC<EventLogModalProps> = ({
+const EventLogModal: React.FC<ModalProps & { eventLog: ChatEvent[] }> = ({
   isOpen,
   onClose,
   eventLog,

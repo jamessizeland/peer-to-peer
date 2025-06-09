@@ -1,87 +1,88 @@
+import Modal, { ModalProps } from "components/elements/modal";
 import { useState, useEffect } from "react";
 import { CiLogin, CiShare1 } from "react-icons/ci";
-import {
-  createRoom,
-  joinRoom,
-  getNickname,
-  getLatestTicket,
-} from "services/ipc";
+import { createRoom, joinRoom, getNickname } from "services/ipc";
 
-const LobbyForm: React.FC = () => {
+const LobbyForm: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   const [nickname, setNickname] = useState<string>();
+  const [roomName, setRoomName] = useState<string>();
   const [ticket, setTicket] = useState<string>();
-  const [rejoinTicket, setRejoinTicket] = useState<string>();
 
   useEffect(() => {
     getNickname().then((name) => {
       if (name) setNickname(name);
     });
-    getLatestTicket().then((ticket) => {
-      if (ticket) setRejoinTicket(ticket);
-    });
   }, []);
   return (
-    <>
-      <form
-        className="flex flex-col space-y-2"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (nickname) {
-            if (ticket) {
-              if (await joinRoom(ticket, nickname)) {
-                window.location.href = "/chat";
-              }
-            } else {
-              if (await createRoom(nickname)) {
-                window.location.href = "/chat";
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <div className="space-y-4 flex flex-col items-center p-4 border rounded-md border-secondary">
+        <form
+          className="flex flex-col space-y-2 items-center"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (nickname) {
+              if (ticket) {
+                if (await joinRoom(ticket, nickname)) {
+                  window.location.href = "/chat";
+                }
+              } else if (roomName) {
+                if (await createRoom(nickname, roomName)) {
+                  window.location.href = "/chat";
+                }
               }
             }
-          }
-        }}
-      >
-        <input
-          className="input input-accent"
-          type="text"
-          placeholder="Nickname"
-          defaultValue={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          required // Optional: makes the browser enforce that the field is filled
-        />
-        <input
-          className="input input-accent"
-          type="text"
-          placeholder="Room ID"
-          defaultValue={ticket}
-          onChange={(e) => setTicket(e.target.value)}
-        />
-        <button disabled={!nickname} type="submit" className="btn btn-accent">
-          {ticket ? (
-            <>
-              Enter Room <CiLogin />
-            </>
-          ) : (
-            <>
-              Create Room <CiShare1 />
-            </>
-          )}
-        </button>
-        {rejoinTicket ? (
+          }}
+        >
+          <input
+            className="input input-primary"
+            type="text"
+            placeholder="Room name"
+            defaultValue={roomName}
+            onChange={(e) => setRoomName(e.target.value)}
+            required // Optional: makes the browser enforce that the field is filled
+          />
           <button
-            disabled={!nickname}
-            type="button"
-            className="btn btn-accent"
-            onClick={async () => {
-              if (!nickname) return;
-              if (await joinRoom(rejoinTicket, nickname)) {
-                window.location.href = "/chat";
-              }
-            }}
+            disabled={!nickname || !roomName}
+            type="submit"
+            className="btn btn-primary"
           >
-            Rejoin Room <CiLogin />
+            Create Room <CiShare1 />
           </button>
-        ) : null}
-      </form>
-    </>
+        </form>
+        <form
+          className="flex flex-col space-y-2 items-center"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (nickname) {
+              if (ticket) {
+                if (await joinRoom(ticket, nickname)) {
+                  window.location.href = "/chat";
+                }
+              } else if (roomName) {
+                if (await createRoom(nickname, roomName)) {
+                  window.location.href = "/chat";
+                }
+              }
+            }
+          }}
+        >
+          <input
+            className="input input-primary"
+            type="text"
+            placeholder="Room ID"
+            defaultValue={ticket}
+            onChange={(e) => setTicket(e.target.value)}
+          />
+          <button
+            disabled={!nickname || !ticket}
+            type="submit"
+            className="btn btn-primary"
+          >
+            Enter Room <CiLogin />
+          </button>
+        </form>
+      </div>
+    </Modal>
   );
 };
 

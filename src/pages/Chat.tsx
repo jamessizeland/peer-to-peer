@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ChatEvent, MessageReceivedEvent } from "types/events";
 import { listen } from "@tauri-apps/api/event";
-import TopBar from "components/elements/topbar";
-import EventLogModal from "components/elements/eventLog";
-import Messages from "components/elements/messages";
+import TopBar from "components/features/topbar";
+import EventLogModal from "components/features/eventLog";
+import Messages from "components/features/messages";
 import { notify } from "services/notifications";
 import { PeerInfo } from "types";
 

@@ -1,52 +1,56 @@
-import LobbyForm from "components/elements/lobbyForm";
+import Button from "components/elements/button";
+import AboutModal from "components/features/about";
+import Branding from "components/features/branding";
+import LobbyForm from "components/features/lobbyForm";
+import RoomsList from "components/features/roomsList";
+import UserEditModal from "components/features/userEdit";
 import Footer from "components/Layout/footer";
+import { useState } from "react";
+import { FaUserEdit } from "react-icons/fa";
+import { FaCircleInfo } from "react-icons/fa6";
+import { IoMdAddCircle } from "react-icons/io";
 
 export function LobbyPage() {
   return (
-    <div className="flex flex-col items-center h-screen w-screen space-y-2">
-      <h1 className="m-2 text-2xl font-bold uppercase">Lobby</h1>
-      {/*  create a new room or join an existing room */}
-      <LobbyForm />
-      <AboutCard />
+    <div className="flex flex-col items-center h-screen w-screen space-y-2 ">
+      <TopBar />
+      <RoomsList />
       <div className="h-full" />
       <Footer />
     </div>
   );
 }
 
-const AboutCard: React.FC = () => {
+const TopBar = () => {
+  const [openAbout, setOpenAbout] = useState<boolean>(false);
+  const [openUserEdit, setOpenUserEdit] = useState<boolean>(false);
+  const [openCreateRoom, setOpenCreateRoom] = useState<boolean>(false);
+
   return (
-    <p className="backdrop-opacity-100 p-2 m-4 text-sm border rounded-md border-accent max-h-fit">
-      This is a peer to peer messaging app using the{" "}
-      <a
-        target="_blank"
-        className="link link-secondary"
-        href="https://www.iroh.computer/proto/iroh-gossip"
-      >
-        Iroh Gossip Protocol
-      </a>{" "}
-      to send messages between peers sharing a Room. <br />
-      <br />
-      Messages are sent as events to all connected peers directly, are encrypted
-      as standard and are not persisted anywhere. <br />
-      <br />
-      This is a proof of concept based heavily on the{" "}
-      <a
-        target="_blank"
-        className="link link-secondary"
-        href="https://github.com/n0-computer/iroh-examples/tree/main/browser-chat"
-      >
-        Iroh chat example
-      </a>{" "}
-      and modified for a{" "}
-      <a
-        target="_blank"
-        className="link link-secondary"
-        href="https://tauri.app/"
-      >
-        Tauri App
-      </a>
-      .
-    </p>
+    <div className="w-screen flex justify-between">
+      {/* Modal pop-ups */}
+      <AboutModal isOpen={openAbout} onClose={() => setOpenAbout(false)} />
+      <UserEditModal
+        isOpen={openUserEdit}
+        onClose={() => setOpenUserEdit(false)}
+      />
+      <LobbyForm
+        isOpen={openCreateRoom}
+        onClose={() => setOpenCreateRoom(false)}
+      />
+      {/* Top bar buttons */}
+      <div className="flex flex-row space-x-1">
+        <Button onClick={() => setOpenUserEdit(true)}>
+          <FaUserEdit />
+        </Button>
+        <Button onClick={() => setOpenCreateRoom(true)}>
+          <IoMdAddCircle />
+        </Button>
+      </div>
+      <Branding />
+      <Button onClick={() => setOpenAbout(true)}>
+        <FaCircleInfo />
+      </Button>
+    </div>
   );
 };
