@@ -3,9 +3,12 @@ import { notifyError } from "./notifications";
 
 /** Create a new room and return the information required to send
  an out-of-band Join Code to others to connect. */
-export async function createRoom(nickname: string): Promise<string> {
+export async function createRoom(
+  nickname: string,
+  name: string
+): Promise<string> {
   try {
-    let ticket = await invoke<string>("create_room", { nickname });
+    let ticket = await invoke<string>("create_room", { nickname, name });
     return ticket;
   } catch (e) {
     notifyError(`Failed to create room: ${e}`, "RoomCreateError");
@@ -28,9 +31,9 @@ export async function joinRoom(
 }
 
 /** Return the ticket string for the latest created room. */
-export async function getLatestTicket(): Promise<string | null> {
+export async function getLatestTicket(): Promise<[string, string] | null> {
   try {
-    return await invoke<string | null>("get_latest_ticket");
+    return await invoke<[string, string] | null>("get_latest_ticket");
   } catch (e) {
     notifyError(`Failed to get latest ticket: ${e}`, "TicketGetError");
     return null;
@@ -74,12 +77,33 @@ export async function leaveRoom(): Promise<void> {
   }
 }
 
-/** Return the node id of this node */
+/** Return the node id of this node. */
 export async function getNodeId(): Promise<string> {
   try {
     return await invoke<string>("get_node_id");
   } catch (e) {
     notifyError(`Failed to get node id: ${e}`, "NodeIdGetError");
     return "";
+  }
+}
+
+/** Return the list of visited rooms in order of most recently visited.
+ * [topic_id, room_name, ticket_string]
+ */
+export async function getVisitedRooms(): Promise<[string, string, string][]> {
+  try {
+    return await invoke<[string, string, string][]>("get_visited_rooms");
+  } catch (e) {
+    notifyError(`Failed to get visited rooms: ${e}`, "RoomsGetError");
+    return [];
+  }
+}
+
+/** Delete a visited room from the list. */
+export async function deleteVisitedRoom(topic: string) {
+  try {
+    await invoke("delete_visited_room", { topic });
+  } catch (e) {
+    notifyError(`Failed to delete: ${e}`, "RoomsDeleteError");
   }
 }

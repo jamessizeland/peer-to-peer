@@ -66,6 +66,8 @@ pub fn run() {
             ipc::get_node_id,
             ipc::set_nickname,
             ipc::get_nickname,
+            ipc::get_visited_rooms,
+            ipc::delete_visited_room,
         ])
         .run(tauri::generate_context!()) // Run the Tauri application
         .expect("error while running tauri application");

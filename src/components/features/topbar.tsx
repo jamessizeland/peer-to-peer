@@ -3,6 +3,7 @@ import PeerInfoDropdown from "./peerList";
 import TicketViewer from "./ticket";
 import { PeerInfo } from "types";
 import { CiLogout, CiMemoPad } from "react-icons/ci";
+import Button from "components/elements/button";
 
 const TopBar: React.FC<{
   openEventLog: () => void;
@@ -10,29 +11,21 @@ const TopBar: React.FC<{
 }> = ({ openEventLog, neighbours }) => {
   return (
     <div className="w-screen flex justify-between p-1">
-      <button
-        type="button"
-        className="text-2xl w-15 btn btn-accent"
+      <Button
         onClick={async () => {
           await leaveRoom();
           location.href = "/lobby";
         }}
       >
         <CiLogout />
-      </button>
+      </Button>
       <div className="flex flex-row space-x-2">
         <PeerInfoDropdown peers={neighbours} />
         <TicketViewer />
       </div>
-      <button
-        type="button"
-        className="text-2xl w-15 btn btn-accent"
-        onClick={() => {
-          openEventLog();
-        }}
-      >
+      <Button onClick={openEventLog}>
         <CiMemoPad />
-      </button>
+      </Button>
     </div>
   );
 };

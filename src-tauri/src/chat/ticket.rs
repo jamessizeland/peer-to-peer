@@ -6,21 +6,28 @@ use iroh_base::ticket::Ticket;
 pub use iroh_gossip::proto::TopicId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ChatTicket {
     pub topic_id: TopicId,
+    pub name: String,
     pub bootstrap: BTreeSet<NodeId>,
 }
 
 impl ChatTicket {
-    pub fn new_random() -> Self {
+    #[allow(unused)]
+    fn new_random() -> Self {
         let topic_id = TopicId::from_bytes(rand::random());
-        Self::new(topic_id)
+        Self::new(topic_id, "anonymous")
+    }
+    pub fn new_named(name: &str) -> Self {
+        let topic_id = TopicId::from_bytes(rand::random());
+        Self::new(topic_id, name)
     }
 
-    pub fn new(topic_id: TopicId) -> Self {
+    pub fn new(topic_id: TopicId, name: &str) -> Self {
         Self {
             topic_id,
+            name: name.to_string(),
             bootstrap: Default::default(),
         }
     }

@@ -2,7 +2,7 @@ use crate::chat::{
     self,
     channel::{Channel, TicketOpts},
     peers::{PeerInfo, PeerMap},
-    ChatNode, ChatSender, Event,
+    ChatNode, ChatSender, ChatTicket, Event,
 };
 use anyhow::anyhow;
 use iroh::NodeId;
@@ -50,6 +50,7 @@ impl AppContext {
             peers: Arc::new(TokioMutex::new(Default::default())),
         }
     }
+    #[allow(unused)]
     /// Return a list of the known members of this Gossip Swarm.
     pub async fn get_peers(&self) -> Vec<PeerInfo> {
         let peers = self.peers.lock().await;
@@ -63,7 +64,7 @@ impl AppContext {
         }
     }
     /// Generate a new ticket token string.
-    pub async fn generate_ticket(&self, options: TicketOpts) -> anyhow::Result<String> {
+    pub async fn generate_ticket(&self, options: TicketOpts) -> anyhow::Result<ChatTicket> {
         match self.active_channel.lock().await.as_ref() {
             Some(channel) => channel.inner.ticket(options),
             None => Err(anyhow!("Could not generate ticket. No active channel.")),
@@ -199,7 +200,7 @@ async fn update_ticket(
             if let Some(active_channel_guard) = active_channel_clone.lock().await.as_ref() {
                 match active_channel_guard.inner.ticket(TicketOpts::all()) {
                     Ok(new_ticket_str) => {
-                        *latest_ticket_clone.lock().await = Some(new_ticket_str.clone());
+                        *latest_ticket_clone.lock().await = Some(new_ticket_str.serialize());
                         tracing::info!(
                             "Updated latest_ticket due to new peer joining/neighbor up."
                         );
