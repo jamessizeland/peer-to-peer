@@ -31,6 +31,7 @@ impl TicketOpts {
 }
 
 pub struct Channel {
+    name: String,
     topic_id: TopicId,
     me: NodeId,
     bootstrap: BTreeSet<NodeId>,
@@ -49,7 +50,7 @@ impl Channel {
     }
 
     pub fn ticket(&self, opts: TicketOpts) -> anyhow::Result<String> {
-        let mut ticket = ChatTicket::new(self.topic_id);
+        let mut ticket = ChatTicket::new(self.topic_id, &self.name);
         if opts.include_myself {
             ticket.bootstrap.insert(self.me);
         }
@@ -84,7 +85,7 @@ impl ChatNode {
     pub fn generate_channel(
         &self,
         ticket: ChatTicket,
-        nickname: String,
+        nickname: String, // user name
     ) -> anyhow::Result<Channel> {
         let (sender, receiver) = self.join(&ticket, nickname)?;
         let neighbors = Arc::new(Mutex::new(BTreeSet::new()));
@@ -95,6 +96,7 @@ impl ChatNode {
         ticket.bootstrap.insert(self.node_id());
 
         let topic = Channel {
+            name: ticket.name,
             topic_id: ticket.topic_id,
             bootstrap: ticket.bootstrap,
             neighbors,

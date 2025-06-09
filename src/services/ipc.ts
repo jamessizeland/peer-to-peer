@@ -3,9 +3,12 @@ import { notifyError } from "./notifications";
 
 /** Create a new room and return the information required to send
  an out-of-band Join Code to others to connect. */
-export async function createRoom(nickname: string): Promise<string> {
+export async function createRoom(
+  nickname: string,
+  name: string
+): Promise<string> {
   try {
-    let ticket = await invoke<string>("create_room", { nickname });
+    let ticket = await invoke<string>("create_room", { nickname, name });
     return ticket;
   } catch (e) {
     notifyError(`Failed to create room: ${e}`, "RoomCreateError");

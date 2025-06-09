@@ -9,7 +9,8 @@ use anyhow::anyhow;
 /// Create a new room and return the information required to send
 /// an out-of-band Join Code to others to connect.
 pub async fn create_room(
-    nickname: String,
+    name: String,     // room name
+    nickname: String, // user name
     state: tauri::State<'_, AppContext>,
     app: tauri::AppHandle,
 ) -> tauri::Result<String> {
@@ -22,9 +23,9 @@ pub async fn create_room(
     leave_room(state.clone(), app.clone()).await?;
 
     let store = AppStore::acquire(&app)?;
-    // Create a new random ticket to initialize the channel.
+    // Create a new ticket to initialize the channel.
     // generate_channel will ensure this node is part of the bootstrap.
-    let initial_ticket = ChatTicket::new_random();
+    let initial_ticket = ChatTicket::new_named(&name);
 
     // Use generate_channel from [chat::channel]
     let mut channel = node
