@@ -30,9 +30,9 @@ bun install
 bun tauri dev
 ```
 
-![intro](./img/p2p.gif)
-
 ![lobby](./img/lobby.png)
+
+![newRoom](./img//newRoom.png)
 
 ![chat](./img/chat.png)
 
