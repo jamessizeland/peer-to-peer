@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-fs": "~2.3",
     "@tauri-apps/plugin-opener": "^2.2.6",
     "@tauri-apps/plugin-os": "~2.2.1",
+    "@tauri-apps/plugin-sql": "~2",
     "@types/node": "^22.14.1",
     "dayjs": "^1.11.13",
     "motion": "^12.7.3",
