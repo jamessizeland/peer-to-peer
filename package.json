@@ -1,7 +1,7 @@
 {
   "name": "peer-to-peer",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "repository": "https://github.com/jamessizeland/peer-to-peer",
   "scripts": {
@@ -20,7 +20,7 @@
     "@tauri-apps/plugin-opener": "^2.2.6",
     "@tauri-apps/plugin-os": "~2.2.1",
     "@tauri-apps/plugin-sql": "~2",
-    "@types/node": "^22.14.1",
+    "@types/node": "24.0.0",
     "dayjs": "^1.11.13",
     "motion": "^12.7.3",
     "react": "^19.1.0",
