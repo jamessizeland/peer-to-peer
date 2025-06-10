@@ -1,7 +1,6 @@
 use crate::{
     chat::{channel::TicketOpts, ChatTicket, NodeId},
-    state::AppContext,
-    utils::AppStore,
+    state::{AppContext, AppStore},
 };
 use anyhow::anyhow;
 

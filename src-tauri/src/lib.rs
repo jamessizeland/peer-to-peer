@@ -1,6 +1,6 @@
 use anyhow::anyhow;
+use state::AppStore;
 use tauri::Manager as _;
-use utils::AppStore;
 
 mod chat;
 mod ipc;
