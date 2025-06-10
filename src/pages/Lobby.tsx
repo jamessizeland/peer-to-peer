@@ -15,7 +15,6 @@ export function LobbyPage() {
     <div className="flex flex-col items-center h-screen w-screen space-y-2 ">
       <TopBar />
       <RoomsList />
-      <div className="h-full" />
       <Footer />
     </div>
   );

@@ -27,11 +27,11 @@ const RoomsList: React.FC = () => {
   }, [rooms, filter]);
 
   return (
-    <div className="flex flex-col w-full lg:w-96 p-4">
+    <div className="flex flex-col flex-1 w-full px-4 pt-4 lg:w-96 min-h-0">
       <SearchBar setFilter={setFilter} />
-      <ul className="flex flex-col space-y-2 py-2 overflow-y-auto">
+      <div className="grow space-y-2 py-2 overflow-y-scroll min-h-0">
         {filterRooms().map(({ id, name, ticket }) => (
-          <li key={id} className="flex flex-row items-center space-x-2 w-full">
+          <div key={id} className="flex flex-row items-center space-x-2 w-full">
             {/* Button to enter the room */}
             <button
               type="button"
@@ -64,9 +64,9 @@ const RoomsList: React.FC = () => {
             >
               <MdDelete />
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
