@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdSend } from "react-icons/md";
-import { sendMessage, getNodeId, getNickname } from "services/ipc";
+import { addMessage, buildMessage } from "services/db";
+import {
+  sendMessage,
+  getNodeId,
+  getNickname,
+  getLatestTicket,
+} from "services/ipc";
+import { VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
 
 // This interface will represent any message shown in the UI,
@@ -22,6 +29,7 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
   const [submitting, setSubmitting] = useState(false);
   const [myNodeId, setMyNodeId] = useState<string | null>(null);
   const [myNickname, setMyNickname] = useState<string | null>(null);
+  const [ticket, setTicket] = useState<VisitedRoom | null>(null);
 
   // Stores messages sent by the current user locally
   const [localSentMessages, setLocalSentMessages] = useState<DisplayMessage[]>(
@@ -38,8 +46,10 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
       try {
         const nodeId = await getNodeId();
         const nickname = await getNickname();
+        const ticket = await getLatestTicket();
         setMyNodeId(nodeId);
         setMyNickname(nickname || "Me"); // Fallback nickname
+        setTicket(ticket);
       } catch (error) {
         console.error("Failed to fetch user details:", error);
         setMyNickname("Me (Error)");
@@ -51,8 +61,12 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
   // Combine and sort messages whenever propMessages or localSentMessages change
   useEffect(() => {
     const remoteDisplayMessages: DisplayMessage[] = propMessages.map((msg) => ({
-      ...msg, // from, text, nickname, sentTimestamp
-      isMine: false, // Messages from props are from others
+      // Spread common properties from MessageReceivedEvent
+      from: msg.from,
+      text: msg.text,
+      nickname: msg.nickname,
+      sentTimestamp: msg.sentTimestamp,
+      isMine: myNodeId ? msg.from === myNodeId : false, // Determine if the message is from the current user
       displayId: `remote-${msg.from}-${msg.sentTimestamp}-${msg.text.slice(
         0,
         5
@@ -62,7 +76,7 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
     const allMessages = [...localSentMessages, ...remoteDisplayMessages];
     allMessages.sort((a, b) => a.sentTimestamp - b.sentTimestamp);
     setDisplayedMessages(allMessages);
-  }, [propMessages, localSentMessages]);
+  }, [propMessages, localSentMessages, myNodeId]);
 
   const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -78,11 +92,19 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
         isMine: true,
         displayId: `local-${Date.now()}`, // Unique ID for local message
       };
+      const newDBMessage: MessageReceivedEvent = {
+        type: "messageReceived",
+        from: myNodeId,
+        nickname: myNickname,
+        text: messageToSend,
+        sentTimestamp: Date.now() * 1000,
+      };
 
       setLocalSentMessages((prev) => [...prev, newLocalMessage]);
       setInputValue(""); // Clear input
 
       try {
+        if (ticket) await addMessage(buildMessage(newDBMessage, ticket));
         await sendMessage(messageToSend);
         // Message is already displayed locally. No further action on success needed here.
       } catch (error) {

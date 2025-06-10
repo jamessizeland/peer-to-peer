@@ -20,7 +20,7 @@ use n0_future::{
     StreamExt,
 };
 pub use sender::ChatSender;
-pub use ticket::ChatTicket;
+pub use ticket::{ChatTicket, VisitedRoom};
 use tokio::sync::Notify;
 use tracing::{debug, info, warn};
 

@@ -20,6 +20,11 @@
       "csp": null
     }
   },
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:chat.db"]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

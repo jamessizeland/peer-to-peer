@@ -2,6 +2,8 @@ use anyhow::anyhow;
 use state::AppStore;
 use tauri::Manager as _;
 
+use crate::state::{generate_db_migrations, SQL_CHAT_DB};
+
 mod chat;
 mod ipc;
 mod state;
@@ -43,7 +45,11 @@ pub fn run() {
     tracing::info!("Starting app");
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations(SQL_CHAT_DB, generate_db_migrations())
+                .build(),
+        )
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())

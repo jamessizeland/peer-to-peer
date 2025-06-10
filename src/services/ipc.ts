@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { notifyError } from "./notifications";
+import { VisitedRoom } from "types";
 
 /** Create a new room and return the information required to send
  an out-of-band Join Code to others to connect. */
@@ -31,9 +32,9 @@ export async function joinRoom(
 }
 
 /** Return the ticket string for the latest created room. */
-export async function getLatestTicket(): Promise<[string, string] | null> {
+export async function getLatestTicket(): Promise<VisitedRoom | null> {
   try {
-    return await invoke<[string, string] | null>("get_latest_ticket");
+    return await invoke<VisitedRoom | null>("get_latest_ticket");
   } catch (e) {
     notifyError(`Failed to get latest ticket: ${e}`, "TicketGetError");
     return null;
@@ -90,9 +91,9 @@ export async function getNodeId(): Promise<string> {
 /** Return the list of visited rooms in order of most recently visited.
  * [topic_id, room_name, ticket_string]
  */
-export async function getVisitedRooms(): Promise<[string, string, string][]> {
+export async function getVisitedRooms(): Promise<VisitedRoom[]> {
   try {
-    return await invoke<[string, string, string][]>("get_visited_rooms");
+    return await invoke<VisitedRoom[]>("get_visited_rooms");
   } catch (e) {
     notifyError(`Failed to get visited rooms: ${e}`, "RoomsGetError");
     return [];

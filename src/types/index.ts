@@ -9,11 +9,19 @@ export type TicketOpts = {
   includeNeighbors: boolean;
 };
 
+export interface Conversation {
+  id: string;
+  name?: string;
+  last_message_at?: number | null;
+}
+
 export interface Message {
   id: string;
-  sender: string;
+  conversation_id: string;
   content: string;
-  nickname?: string;
+  created_at: number;
+  sender_id: string;
+  nickname: string;
 }
 
 export interface PeerInfo {
@@ -25,3 +33,10 @@ export interface PeerInfo {
 }
 
 export type PeerStatus = "Online" | "Away" | "Offline";
+
+/** Helper function from backend */
+export type VisitedRoom = {
+  id: string;
+  name: string;
+  ticket: string;
+};

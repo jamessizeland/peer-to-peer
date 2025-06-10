@@ -8,9 +8,11 @@ import {
   joinRoom,
 } from "services/ipc";
 import { notifyWarning } from "services/notifications";
+import { VisitedRoom } from "types";
+import { deleteConversation } from "services/db";
 
 const RoomsList: React.FC = () => {
-  const [rooms, setRooms] = useState<[string, string, string][]>([]);
+  const [rooms, setRooms] = useState<VisitedRoom[]>([]);
   const [filter, setFilter] = useState<string>("");
   useEffect(() => {
     getVisitedRooms().then((rooms) => {
@@ -20,7 +22,7 @@ const RoomsList: React.FC = () => {
 
   const filterRooms = useCallback(() => {
     return rooms.filter((room) =>
-      room[1].toLowerCase().includes(filter.toLowerCase())
+      room.name.toLowerCase().includes(filter.toLowerCase())
     );
   }, [rooms, filter]);
 
@@ -28,7 +30,7 @@ const RoomsList: React.FC = () => {
     <div className="flex flex-col w-full lg:w-96 p-4">
       <SearchBar setFilter={setFilter} />
       <ul className="flex flex-col space-y-2 py-2 overflow-y-auto">
-        {filterRooms().map(([id, name, ticket]) => (
+        {filterRooms().map(({ id, name, ticket }) => (
           <li key={id} className="flex flex-row items-center space-x-2 w-full">
             {/* Button to enter the room */}
             <button
@@ -52,9 +54,12 @@ const RoomsList: React.FC = () => {
               type="button"
               className="btn btn-outline btn-error btn-square"
               onClick={async () => {
-                await deleteVisitedRoom(id);
-                let rooms = await getVisitedRooms();
-                setRooms(rooms);
+                if (confirm("Are you sure you want to delete this room?")) {
+                  await deleteConversation(id);
+                  await deleteVisitedRoom(id);
+                  let rooms = await getVisitedRooms();
+                  setRooms(rooms);
+                }
               }}
             >
               <MdDelete />

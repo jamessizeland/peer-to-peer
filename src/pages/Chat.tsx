@@ -4,48 +4,102 @@ import { listen } from "@tauri-apps/api/event";
 import TopBar from "components/features/topbar";
 import EventLogModal from "components/features/eventLog";
 import Messages from "components/features/messages";
-import { notify } from "services/notifications";
-import { PeerInfo } from "types";
+import { notify, notifyError } from "services/notifications";
+import { PeerInfo, VisitedRoom } from "types";
 import { getLatestTicket } from "services/ipc";
+import {
+  addMessage,
+  buildMessage,
+  ensureConversationExists,
+  getMessages,
+} from "services/db";
 
 export function ChatPage() {
   const [messages, setMessages] = useState<MessageReceivedEvent[]>([]);
   const [eventLog, setEventLog] = useState<ChatEvent[]>([]);
   const [neighbours, setNeighbours] = useState<PeerInfo[]>([]);
   const [openLog, setOpenLog] = useState<boolean>(false);
-  const [name, setName] = useState<string>("");
+  const [ticket, setTicket] = useState<VisitedRoom>();
 
   useEffect(() => {
-    getLatestTicket().then((ticket) => {
-      if (ticket) {
-        setName(ticket[1]);
+    getLatestTicket().then((newTicket) => {
+      if (newTicket) {
+        setTicket(newTicket);
       }
     });
   }, []);
 
   useEffect(() => {
+    if (!ticket) return;
+    const setupConversation = async () => {
+      try {
+        // Ensure the conversation record exists in the DB
+        await ensureConversationExists(ticket.id, ticket.name);
+      } catch (error) {
+        notifyError(
+          `Failed to set up conversation: ${error}`,
+          "setupConvError"
+        );
+      }
+    };
+    setupConversation();
+
+    const loadPersistedMessages = async () => {
+      try {
+        const persisted = await getMessages(ticket.id);
+        const historicalMessages: MessageReceivedEvent[] = persisted.map(
+          (dbMsg) => ({
+            type: "messageReceived",
+            from: dbMsg.sender_id,
+            nickname: dbMsg.nickname,
+            text: dbMsg.content,
+            sentTimestamp: dbMsg.created_at,
+          })
+        );
+        setMessages(historicalMessages);
+      } catch (error) {
+        notifyError(
+          `Error loading persisted messages: ${error}`,
+          "loadingError"
+        );
+      }
+    };
+    loadPersistedMessages();
+  }, [ticket]);
+
+  useEffect(() => {
+    // If ticket is not yet available, don't set up listeners that depend on it.
+    // The effect will re-run when ticket is set.
+    if (!ticket) return;
     const updatePeersRef = listen<PeerInfo[]>("peers-event", async (event) => {
       console.log(event.payload);
       setNeighbours(event.payload);
     });
     const welcomePeersRef = listen<String>("peers-new", async (event) => {
-      notify(`${event.payload} joined the room`);
+      notify(`${event.payload} joined ${ticket.name}`);
     });
 
     const eventsRef = listen<ChatEvent>("chat-event", async (event) => {
       console.log(event);
-      setEventLog((eventLog) => [...eventLog, event.payload]);
+      setEventLog((prevLog) => [...prevLog, event.payload]);
       if (event.payload.type === "messageReceived") {
-        const message = event.payload;
-        setMessages((messages) => [...messages, message]);
+        const liveMessage = event.payload;
+        setMessages((prevMsgs) => [...prevMsgs, liveMessage]);
+        try {
+          // Add message to database for persistence
+          await addMessage(buildMessage(liveMessage, ticket));
+        } catch (dbError) {
+          console.error("Failed to persist message:", dbError);
+          notifyError(`Error saving message: ${dbError}`, "saveMsgError");
+        }
       }
     });
     return () => {
-      updatePeersRef.then((drop) => drop());
-      eventsRef.then((drop) => drop());
-      welcomePeersRef.then((drop) => drop());
+      Promise.all([updatePeersRef, eventsRef, welcomePeersRef]).then((drops) =>
+        drops.forEach((drop) => drop())
+      );
     };
-  }, []);
+  }, [ticket]);
 
   return (
     <div className="flex flex-col items-center h-screen w-screen space-y-2">
@@ -55,7 +109,7 @@ export function ChatPage() {
         isOpen={openLog}
         onClose={() => setOpenLog(false)}
       />
-      <h1 className="text-xl font-bold">{name}</h1>
+      <h1 className="text-xl font-bold">{ticket?.name}</h1>
       <Messages messages={messages} />
     </div>
   );
