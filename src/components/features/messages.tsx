@@ -10,8 +10,6 @@ import {
 import { VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
 
-// This interface will represent any message shown in the UI,
-// whether it's locally sent or received from props.
 interface DisplayMessage {
   from: string; // NodeId of the sender
   text: string; // Message content
@@ -22,7 +20,6 @@ interface DisplayMessage {
 }
 
 const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
-  // `messages` prop contains messages from others
   messages: propMessages,
 }) => {
   const [inputValue, setInputValue] = useState("");
@@ -70,7 +67,7 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
       displayId: `remote-${msg.from}-${msg.sentTimestamp}-${msg.text.slice(
         0,
         5
-      )}`, // Create a somewhat unique ID
+      )}`,
     }));
 
     const allMessages = [...localSentMessages, ...remoteDisplayMessages];
@@ -109,7 +106,6 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
         // Message is already displayed locally. No further action on success needed here.
       } catch (error) {
         console.error("Failed to send message via IPC:", error);
-        // Optionally, provide UI feedback for send failure, e.g., remove the message or mark it as failed
         setLocalSentMessages((prev) =>
           prev.filter((msg) => msg.displayId !== newLocalMessage.displayId)
         );
@@ -141,7 +137,6 @@ const Messages: React.FC<{ messages: MessageReceivedEvent[] }> = ({
             }
           }}
           required
-          //   rows={1}
         />
         <button
           disabled={!inputValue.trim() || submitting}
@@ -184,7 +179,6 @@ const MessageArea: React.FC<{
               </time>
             </div>
             <div className="chat-bubble">{message.text}</div>
-            {/* Optional: Footer for sent/delivered status for "isMine" messages */}
           </div>
         );
       })}
