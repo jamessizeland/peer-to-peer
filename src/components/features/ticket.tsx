@@ -14,8 +14,9 @@ const TicketViewer: React.FC = () => {
             notifyError("No Room ID to copy.");
             return;
           }
-          await writeText(ticket[0]);
-          notifyInfo(`Room ID copied:\n ${ticket}`);
+          const ticketString = ticket.ticket;
+          await writeText(ticketString);
+          notifyInfo(`Room ID copied to clipboard.`);
         }}
       >
         Invite <MdShare />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MdSend } from "react-icons/md";
 import { addMessage, eventToMessage } from "services/db";
 import {
@@ -9,6 +9,8 @@ import {
 } from "services/ipc";
 import { VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
+import { useInfiniteScroll } from "hooks/useInfiniteScroll";
+import { useScrollToBottom } from "hooks/useScrollToBottom";
 
 interface DisplayMessage {
   /** NodeId of the sender */
@@ -151,7 +153,7 @@ const Messages: React.FC<MessageProps> = ({
         onSubmit={handleSendMessage}
       >
         <input
-          className="textarea textarea-bordered textarea-accent w-full resize-none"
+          className="textarea textarea-bordered textarea-info w-full resize-none"
           placeholder="Message"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -168,7 +170,7 @@ const Messages: React.FC<MessageProps> = ({
         <button
           disabled={!inputValue.trim() || submitting}
           type="submit"
-          className="btn btn-accent h-auto"
+          className="btn btn-primary h-auto"
         >
           <MdSend />
         </button>
@@ -187,82 +189,25 @@ const MessageArea: React.FC<{
 }> = ({ displayedMessages, onLoadMore, isLoadingMore, hasMoreOldMessages }) => {
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const scrollContainerRef = useRef<null | HTMLDivElement>(null);
-  const oldScrollHeightRef = useRef<number>(0);
-  const [isAdjustingScroll, setIsAdjustingScroll] = useState(false);
-  const prevDisplayedMessagesLengthRef = useRef(0);
+  const { isAdjustingScroll } = useInfiniteScroll({
+    scrollContainerRef,
+    onLoadMore,
+    isLoading: isLoadingMore,
+    hasMore: hasMoreOldMessages,
+    dependenciesForPreservationEffect: [displayedMessages],
+    scrollTopThreshold: SCROLL_TOP_THRESHOLD,
+    // scrollDebounceDelay: 200, // Default
+    // scrollPreservationDelay: 50, // Default
+  });
 
-  // Detect scroll to top to load more messages
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    let timerId: NodeJS.Timeout | null = null;
-    const handleScroll = () => {
-      if (container.scrollTop < SCROLL_TOP_THRESHOLD) {
-        if (timerId) clearTimeout(timerId);
-        timerId = setTimeout(() => {
-          if (
-            container.scrollTop < SCROLL_TOP_THRESHOLD && // check if near top
-            hasMoreOldMessages && // more messages are available to load
-            !isLoadingMore && // not already loading from props
-            !isAdjustingScroll // not currently in the process of adjusting scroll
-          ) {
-            oldScrollHeightRef.current = container.scrollHeight;
-            setIsAdjustingScroll(true); // signal that we are about to load and will need to adjust
-            onLoadMore();
-          }
-        }, 200);
-      }
-    };
-    container.addEventListener("scroll", handleScroll);
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [hasMoreOldMessages, isLoadingMore, onLoadMore, isAdjustingScroll]);
-
-  // Adjust scroll position, after older messages are loaded, and appended.
-  useLayoutEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    if (isAdjustingScroll && !isLoadingMore) {
-      // isLoadingMore is now false, meaning ChatPage finished loading
-      const newScrollHeight = container.scrollHeight;
-      // only adjust if new messages were actually loaded
-      if (newScrollHeight > oldScrollHeightRef.current) {
-        container.scrollTop = newScrollHeight - oldScrollHeightRef.current;
-      }
-      const timerId = setTimeout(() => {
-        // delay to prevent loading cascade allows scrollbar to update)
-        setIsAdjustingScroll(false); // reset adjustment flag
-      }, 50);
-      return () => clearTimeout(timerId);
-    }
-  }, [displayedMessages, isLoadingMore, isAdjustingScroll]);
-
-  // Scroll to bottom for new messages or initial load
-  useLayoutEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    if (isAdjustingScroll || isLoadingMore) {
-      // Don't scroll to bottom if we are adjusting for old messages or currently loading them
-      return;
-    }
-    // Heuristic: if message count increased and we're not adjusting scroll, it's likely a new message.
-    // More robust: check if user was already near bottom.
-    const BOTTOM_THRESHOLD = 150; // pixels
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      BOTTOM_THRESHOLD;
-    const isInitialLoad =
-      prevDisplayedMessagesLengthRef.current === 0 &&
-      displayedMessages.length > 0;
-    if ((isInitialLoad || isNearBottom) && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: isInitialLoad ? "auto" : "smooth",
-      });
-    }
-    prevDisplayedMessagesLengthRef.current = displayedMessages.length;
-  }, [displayedMessages, isAdjustingScroll, isLoadingMore]);
+  useScrollToBottom({
+    scrollContainerRef,
+    messagesEndRef,
+    currentItemsCount: displayedMessages.length,
+    isAdjustingScroll,
+    isLoadingMore,
+    // bottomThreshold: 150, // Default
+  });
 
   return (
     <div
@@ -272,6 +217,21 @@ const MessageArea: React.FC<{
       {isLoadingMore && displayedMessages.length > 0 && (
         <div className="text-center text-sm text-gray-500 py-2">
           Loading older messages...
+        </div>
+      )}
+      {!hasMoreOldMessages && (
+        <div className="text-center text-sm text-yellow-500 py-2 px-4">
+          Messages are end-to-end encrypted and sent to all online peers
+          directly following the{" "}
+          <a
+            target="_blank"
+            className="link link-info"
+            href="https://www.iroh.computer/proto/iroh-gossip"
+          >
+            gossip protocol
+          </a>
+          . Received messages are stored locally on your device - and sent
+          messages will only arrive at online peers, there is no catch-up sync.
         </div>
       )}
       {displayedMessages.map((message) => {

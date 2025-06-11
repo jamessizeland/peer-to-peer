@@ -10,10 +10,12 @@ import {
 import { notifyWarning } from "services/notifications";
 import { VisitedRoom } from "types";
 import { deleteConversation } from "services/db";
+import { useConfirm } from "hooks/useConfirm";
 
 const RoomsList: React.FC = () => {
   const [rooms, setRooms] = useState<VisitedRoom[]>([]);
   const [filter, setFilter] = useState<string>("");
+  const { confirm, ConfirmationModal } = useConfirm();
   useEffect(() => {
     getVisitedRooms().then((rooms) => {
       setRooms(rooms);
@@ -35,7 +37,7 @@ const RoomsList: React.FC = () => {
             {/* Button to enter the room */}
             <button
               type="button"
-              className="btn btn-primary flex-grow justify-start btn-outline text-yellow-400 overflow-ellipsis"
+              className="btn btn-info flex-grow justify-start btn-soft text-yellow-400 overflow-ellipsis"
               onClick={async () => {
                 let nickName = await getNickname();
                 if (!nickName) {
@@ -52,13 +54,21 @@ const RoomsList: React.FC = () => {
             {/* Delete button */}
             <button
               type="button"
-              className="btn btn-outline btn-error btn-square"
+              className="btn btn-error btn-square"
               onClick={async () => {
-                if (confirm("Are you sure you want to delete this room?")) {
+                const confirmed = await confirm({
+                  question:
+                    "Are you sure you want to delete this room and its conversation history? This action cannot be undone.",
+                  title: "Delete Room Confirmation",
+                  yesText: "Delete",
+                  noText: "Cancel",
+                  invertColors: true,
+                });
+                if (confirmed) {
                   await deleteConversation(id);
                   await deleteVisitedRoom(id);
-                  let rooms = await getVisitedRooms();
-                  setRooms(rooms);
+                  const updatedRooms = await getVisitedRooms();
+                  setRooms(updatedRooms);
                 }
               }}
             >
@@ -67,6 +77,7 @@ const RoomsList: React.FC = () => {
           </div>
         ))}
       </div>
+      <ConfirmationModal />
     </div>
   );
 };

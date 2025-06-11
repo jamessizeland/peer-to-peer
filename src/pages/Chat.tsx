@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChatEvent, MessageReceivedEvent } from "types/events";
+import { ChatEvent } from "types/events";
 import { listen } from "@tauri-apps/api/event";
 import TopBar from "components/features/topbar";
 import EventLogModal from "components/features/eventLog";
@@ -11,32 +11,26 @@ import {
   addMessage,
   eventToMessage,
   ensureConversationExists,
-  getMessages,
-  messageToEvent,
 } from "services/db";
-
-const MESSAGES_PER_PAGE = 20; // Number of messages to fetch per page
+import { useMessageLoader } from "hooks/useMessageLoader";
 
 export function ChatPage() {
-  const [dbMessages, setDbMessages] = useState<MessageReceivedEvent[]>([]);
   const [eventLog, setEventLog] = useState<ChatEvent[]>([]);
   const [neighbours, setNeighbours] = useState<PeerInfo[]>([]);
   const [openLog, setOpenLog] = useState<boolean>(false);
   const [ticket, setTicket] = useState<VisitedRoom>();
-
-  // Pagination state for historical messages
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreOldMessages, setHasMoreOldMessages] = useState(true);
+  const {
+    dbMessages,
+    loadMorePreviousMessages,
+    isLoadingMore,
+    hasMoreOldMessages,
+    addLiveMessageToDisplay,
+  } = useMessageLoader({ ticket });
 
   useEffect(() => {
     getLatestTicket().then((newTicket) => {
       if (newTicket) {
         setTicket(newTicket);
-        setDbMessages([]);
-        setCurrentPage(1);
-        setIsLoadingMore(false);
-        setHasMoreOldMessages(true);
       }
     });
   }, []);
@@ -51,30 +45,6 @@ export function ChatPage() {
       }
     };
     setupConversation();
-
-    // Load initial batch of messages (infinite scroll will load more if needed)
-    const loadInitialMessages = async () => {
-      if (!ticket) return;
-      try {
-        const persisted = await getMessages(ticket.id, 1, MESSAGES_PER_PAGE);
-        if (persisted.length < MESSAGES_PER_PAGE) {
-          setHasMoreOldMessages(false);
-        }
-        const historicalMessages: MessageReceivedEvent[] =
-          persisted.map(messageToEvent);
-        setDbMessages(historicalMessages);
-        setCurrentPage(1);
-      } catch (error) {
-        notifyError(
-          `Error loading persisted messages: ${error}`,
-          "loadingError"
-        );
-        setHasMoreOldMessages(false); // Stop trying if error
-      } finally {
-        setIsLoadingMore(false);
-      }
-    };
-    loadInitialMessages();
   }, [ticket]);
 
   useEffect(() => {
@@ -94,7 +64,7 @@ export function ChatPage() {
       setEventLog((prevLog) => [...prevLog, event.payload]);
       if (event.payload.type === "messageReceived") {
         const liveMessage = event.payload;
-        setDbMessages((prevMsgs) => [...prevMsgs, liveMessage]);
+        addLiveMessageToDisplay(liveMessage); // Update messages via the hook
         try {
           // Add message to database for persistence
           await addMessage(eventToMessage(liveMessage, ticket));
@@ -111,42 +81,17 @@ export function ChatPage() {
     };
   }, [ticket]);
 
-  const loadMorePreviousMessages = async () => {
-    if (!ticket || isLoadingMore || !hasMoreOldMessages) return;
-    setIsLoadingMore(true);
-    try {
-      const nextPageToFetch = currentPage + 1;
-      const persisted = await getMessages(
-        ticket.id,
-        nextPageToFetch,
-        MESSAGES_PER_PAGE
-      );
-      if (persisted.length === 0) {
-        setHasMoreOldMessages(false);
-      } else {
-        const historicalMessages: MessageReceivedEvent[] =
-          persisted.map(messageToEvent);
-        setDbMessages((prevMsgs) => [...prevMsgs, ...historicalMessages]);
-        setCurrentPage(nextPageToFetch);
-        if (persisted.length < MESSAGES_PER_PAGE) setHasMoreOldMessages(false);
-      }
-    } catch (error) {
-      notifyError(`Error loading more messages: ${error}`, "loadingError");
-      setHasMoreOldMessages(false); // Stop trying if error
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
-
   return (
     <div className="flex flex-col items-center h-screen w-screen space-y-2">
-      <TopBar openEventLog={() => setOpenLog(true)} neighbours={neighbours} />
       <EventLogModal
         eventLog={eventLog}
         isOpen={openLog}
         onClose={() => setOpenLog(false)}
       />
-      <h1 className="text-xl font-bold">{ticket?.name}</h1>
+      <div className="w-full text-center pb-1">
+        <TopBar openEventLog={() => setOpenLog(true)} neighbours={neighbours} />
+        <h1 className="text-xl font-bold">{ticket?.name}</h1>
+      </div>
       <Messages
         dbMessages={dbMessages}
         onLoadMore={loadMorePreviousMessages}
