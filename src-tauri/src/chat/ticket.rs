@@ -7,6 +7,14 @@ pub use iroh_gossip::proto::TopicId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+/// Helper struct for frontend
+pub struct VisitedRoom {
+    pub id: String,
+    pub name: String,
+    pub ticket: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ChatTicket {
     pub topic_id: TopicId,
     pub name: String,

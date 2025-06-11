@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getNickname, setNickname } from "services/ipc";
 import { FaEdit } from "react-icons/fa";
 import { useModal } from "hooks/useModal";
@@ -9,12 +9,20 @@ import { ModalProps } from "components/elements/modal";
 const UserEditModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   const dialogRef = useModal({ isOpen, onClose });
   const [name, setName] = useState<string>();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
+    // Delay focus slightly to ensure the modal and input are fully ready
+    const timerId = setTimeout(() => {
+      const input = dialogRef.current?.querySelector("input");
+      input?.focus();
+    }, 50);
     getNickname().then((name) => {
       console.log(name);
       if (name) setName(name);
     });
+    return () => clearTimeout(timerId);
   }, [isOpen]);
 
   return (
@@ -51,6 +59,8 @@ const UserEditModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
                 </g>
               </svg>
               <input
+                ref={inputRef}
+                autoFocus
                 value={name || ""}
                 onChange={(e) => setName(e.target.value)}
                 type="text"

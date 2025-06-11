@@ -1,5 +1,5 @@
 import Modal, { ModalProps } from "components/elements/modal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CiLogin, CiShare1 } from "react-icons/ci";
 import { createRoom, joinRoom, getNickname } from "services/ipc";
 
@@ -7,17 +7,26 @@ const LobbyForm: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   const [nickname, setNickname] = useState<string>();
   const [roomName, setRoomName] = useState<string>();
   const [ticket, setTicket] = useState<string>();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
+    // Delay focus slightly to ensure the modal and input are fully ready
+    const timerId = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
     getNickname().then((name) => {
       if (name) setNickname(name);
     });
+    return () => clearTimeout(timerId);
   }, [isOpen]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="space-y-4 flex flex-col items-center p-4 border rounded-md border-secondary">
         <p>{nickname}</p>
         <form
+          autoFocus
           className="flex flex-col space-y-2 items-center"
           onSubmit={async (e) => {
             e.preventDefault();
@@ -35,6 +44,8 @@ const LobbyForm: React.FC<ModalProps> = ({ isOpen, onClose }) => {
           }}
         >
           <input
+            ref={inputRef}
+            autoFocus
             className="input input-primary"
             type="text"
             placeholder="Room name"

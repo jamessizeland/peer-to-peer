@@ -8,10 +8,14 @@ import {
   joinRoom,
 } from "services/ipc";
 import { notifyWarning } from "services/notifications";
+import { VisitedRoom } from "types";
+import { deleteConversation } from "services/db";
+import { useConfirm } from "hooks/useConfirm";
 
 const RoomsList: React.FC = () => {
-  const [rooms, setRooms] = useState<[string, string, string][]>([]);
+  const [rooms, setRooms] = useState<VisitedRoom[]>([]);
   const [filter, setFilter] = useState<string>("");
+  const { confirm, ConfirmationModal } = useConfirm();
   useEffect(() => {
     getVisitedRooms().then((rooms) => {
       setRooms(rooms);
@@ -20,20 +24,20 @@ const RoomsList: React.FC = () => {
 
   const filterRooms = useCallback(() => {
     return rooms.filter((room) =>
-      room[1].toLowerCase().includes(filter.toLowerCase())
+      room.name.toLowerCase().includes(filter.toLowerCase())
     );
   }, [rooms, filter]);
 
   return (
-    <div className="flex flex-col w-full lg:w-96 p-4">
+    <div className="flex flex-col flex-1 w-full px-4 pt-4 lg:w-96 min-h-0">
       <SearchBar setFilter={setFilter} />
-      <ul className="flex flex-col space-y-2 py-2 overflow-y-auto">
-        {filterRooms().map(([id, name, ticket]) => (
-          <li key={id} className="flex flex-row items-center space-x-2 w-full">
+      <div className="grow space-y-2 py-2 overflow-y-scroll min-h-0">
+        {filterRooms().map(({ id, name, ticket }) => (
+          <div key={id} className="flex flex-row items-center space-x-2 w-full">
             {/* Button to enter the room */}
             <button
               type="button"
-              className="btn btn-primary flex-grow justify-start btn-outline text-yellow-400 overflow-ellipsis"
+              className="btn btn-info flex-grow justify-start btn-soft text-yellow-400 overflow-ellipsis"
               onClick={async () => {
                 let nickName = await getNickname();
                 if (!nickName) {
@@ -50,18 +54,30 @@ const RoomsList: React.FC = () => {
             {/* Delete button */}
             <button
               type="button"
-              className="btn btn-outline btn-error btn-square"
+              className="btn btn-error btn-square"
               onClick={async () => {
-                await deleteVisitedRoom(id);
-                let rooms = await getVisitedRooms();
-                setRooms(rooms);
+                const confirmed = await confirm({
+                  question:
+                    "Are you sure you want to delete this room and its conversation history? This action cannot be undone.",
+                  title: "Delete Room Confirmation",
+                  yesText: "Delete",
+                  noText: "Cancel",
+                  invertColors: true,
+                });
+                if (confirmed) {
+                  await deleteConversation(id);
+                  await deleteVisitedRoom(id);
+                  const updatedRooms = await getVisitedRooms();
+                  setRooms(updatedRooms);
+                }
               }}
             >
               <MdDelete />
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
+      <ConfirmationModal />
     </div>
   );
 };

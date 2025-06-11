@@ -1,7 +1,6 @@
 use crate::{
-    chat::{channel::TicketOpts, ChatTicket, NodeId},
-    state::AppContext,
-    utils::AppStore,
+    chat::{channel::TicketOpts, ChatTicket, NodeId, VisitedRoom},
+    state::{AppContext, AppStore},
 };
 use anyhow::anyhow;
 
@@ -134,12 +133,16 @@ pub async fn get_nickname(app: tauri::AppHandle) -> tauri::Result<Option<String>
 /// Get the stored room ticket string
 pub async fn get_latest_ticket(
     state: tauri::State<'_, AppContext>,
-) -> tauri::Result<Option<(String, String)>> {
+) -> tauri::Result<Option<VisitedRoom>> {
     let ticket_guard = state.latest_ticket.lock().await;
     match ticket_guard.as_ref() {
         Some(ticket_string) => {
             let ticket = ChatTicket::deserialize(ticket_string)?;
-            Ok(Some((ticket_string.clone(), ticket.name)))
+            Ok(Some(VisitedRoom {
+                id: ticket.topic_id.to_string(),
+                name: ticket.name,
+                ticket: ticket_string.clone(),
+            }))
         }
         None => Ok(None),
     }
@@ -171,19 +174,15 @@ pub async fn get_node_id(state: tauri::State<'_, AppContext>) -> tauri::Result<N
 
 #[tauri::command]
 /// Returns the list of visited rooms in order of most recently visited
-pub async fn get_visited_rooms(
-    app: tauri::AppHandle,
-) -> tauri::Result<Vec<(String, String, String)>> {
+pub async fn get_visited_rooms(app: tauri::AppHandle) -> tauri::Result<Vec<VisitedRoom>> {
     let store = AppStore::acquire(&app)?;
     Ok(store
         .get_visited_rooms()
         .iter()
-        .map(|ticket| {
-            (
-                ticket.topic_id.to_string(),
-                ticket.name.clone(),
-                ticket.serialize(),
-            )
+        .map(|ticket| VisitedRoom {
+            id: ticket.topic_id.to_string(),
+            name: ticket.name.clone(),
+            ticket: ticket.serialize(),
         })
         .rev()
         .collect())
