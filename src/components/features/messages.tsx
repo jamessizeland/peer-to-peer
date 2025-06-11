@@ -253,7 +253,7 @@ const MessageArea: React.FC<{
                 {new Date(message.sentTimestamp / 1000).toLocaleString()}
               </time>
             </div>
-            <div className="chat-bubble">{message.text}</div>
+            <div className="chat-bubble wrap-anywhere">{message.text}</div>
           </div>
         );
       })}
