@@ -36,7 +36,7 @@ interface MessageProps {
   hasMoreOldMessages: boolean;
 }
 
-const SCROLL_TOP_THRESHOLD = 10; // pixels
+const SCROLL_TOP_THRESHOLD = 50; // pixels
 
 const Messages: React.FC<MessageProps> = ({
   dbMessages,
@@ -86,10 +86,7 @@ const Messages: React.FC<MessageProps> = ({
       nickname: msg.nickname,
       sentTimestamp: msg.sentTimestamp,
       isMine: myNodeId ? msg.from === myNodeId : false, // Determine if the message is from the current user
-      displayId: `remote-${msg.from}-${msg.sentTimestamp}-${msg.text.slice(
-        0,
-        5
-      )}-${Math.random()}`,
+      displayId: `remote-${msg.from}-${msg.sentTimestamp}`,
     }));
 
     const allMessages = [...localSentMessages, ...remoteDisplayMessages];
@@ -105,13 +102,14 @@ const Messages: React.FC<MessageProps> = ({
       setSubmitting(true);
 
       const messageToSend = inputValue.trim();
+      const sentTimestamp = Date.now() * 1000;
       const newLocalMessage: DisplayMessage = {
         from: myNodeId,
         text: messageToSend,
         nickname: myNickname,
-        sentTimestamp: Date.now() * 1000,
+        sentTimestamp,
         isMine: true,
-        displayId: `local-${myNodeId}-${Date.now()}-${Math.random()}`, // Unique ID for local message
+        displayId: `local-${myNodeId}-${sentTimestamp}`, // Unique ID for local message
       };
       const newDBMessage: MessageReceivedEvent = {
         type: "messageReceived",
@@ -197,23 +195,32 @@ const MessageArea: React.FC<{
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
+    let timerId: NodeJS.Timeout | null = null;
     const handleScroll = () => {
-      if (
-        container.scrollTop < SCROLL_TOP_THRESHOLD && // check if near top
-        hasMoreOldMessages && // more messages are available to load
-        !isLoadingMore && // not already loading from props
-        !isAdjustingScroll // not currently in the process of adjusting scroll
-      ) {
-        oldScrollHeightRef.current = container.scrollHeight;
-        setIsAdjustingScroll(true); // signal that we are about to load and will need to adjust
-        onLoadMore();
+      if (container.scrollTop < SCROLL_TOP_THRESHOLD) {
+        if (timerId) clearTimeout(timerId);
+        timerId = setTimeout(() => {
+          if (
+            container.scrollTop < SCROLL_TOP_THRESHOLD && // check if near top
+            hasMoreOldMessages && // more messages are available to load
+            !isLoadingMore && // not already loading from props
+            !isAdjustingScroll // not currently in the process of adjusting scroll
+          ) {
+            oldScrollHeightRef.current = container.scrollHeight;
+            setIsAdjustingScroll(true); // signal that we are about to load and will need to adjust
+            onLoadMore();
+          }
+        }, 200);
       }
     };
     container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      if (timerId) clearTimeout(timerId);
+    };
   }, [hasMoreOldMessages, isLoadingMore, onLoadMore, isAdjustingScroll]);
 
-  // Adjust scroll position, after older messages are loaded, and prepend.
+  // Adjust scroll position, after older messages are loaded, and appended.
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -224,7 +231,11 @@ const MessageArea: React.FC<{
       if (newScrollHeight > oldScrollHeightRef.current) {
         container.scrollTop = newScrollHeight - oldScrollHeightRef.current;
       }
-      setIsAdjustingScroll(false); // reset adjustment flag
+      const timerId = setTimeout(() => {
+        // delay to prevent loading cascade allows scrollbar to update)
+        setIsAdjustingScroll(false); // reset adjustment flag
+      }, 50);
+      return () => clearTimeout(timerId);
     }
   }, [displayedMessages, isLoadingMore, isAdjustingScroll]);
 

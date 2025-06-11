@@ -132,6 +132,7 @@ export function ChatPage() {
       }
     } catch (error) {
       notifyError(`Error loading more messages: ${error}`, "loadingError");
+      setHasMoreOldMessages(false); // Stop trying if error
     } finally {
       setIsLoadingMore(false);
     }
