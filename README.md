@@ -9,11 +9,23 @@
 This is a peer to peer messaging app using the [Iroh Gossip Protocol](https://www.iroh.computer/proto/iroh-gossip) to send messages between peers sharing a Room.
 
 Messages are sent as events to all connected peers directly, are encrypted
-as standard and are not persisted anywhere.
+as standard and are not persisted anywhere other than on your device.
 
 This is a proof of concept based heavily on the [Iroh Chat Example](https://github.com/n0-computer/iroh-examples/tree/main/browser-chat) and modified for a [Tauri App](https://tauri.app/).
 
 This is designed for mobile first and has been tested heavily on Android.
+
+## Features
+
+- Encrypted messaging
+- peer-to-peer messaging, no servers*
+- Locally stored visited rooms list
+- Locally stored chat history
+- Emoji support 🎈🎉
+- Messages pushed only to online peers
+- Mobile support (Android only, but iOS possible if you have the dev license to compile it)
+
+*beyond Iroh rendezvous servers used for establishing connections
 
 ## Getting Started
 
