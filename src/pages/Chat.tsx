@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ChatEvent } from "types/events";
 import { listen } from "@tauri-apps/api/event";
 import TopBar from "components/features/topbar";
-import EventLogModal from "components/features/eventLog";
 import Messages from "components/features/messages";
 import { notify, notifyError } from "services/notifications";
 import { PeerInfo, VisitedRoom } from "types";
@@ -17,7 +16,6 @@ import { useMessageLoader } from "hooks/useMessageLoader";
 export function ChatPage() {
   const [eventLog, setEventLog] = useState<ChatEvent[]>([]);
   const [neighbours, setNeighbours] = useState<PeerInfo[]>([]);
-  const [openLog, setOpenLog] = useState<boolean>(false);
   const [ticket, setTicket] = useState<VisitedRoom>();
   const {
     dbMessages,
@@ -56,7 +54,7 @@ export function ChatPage() {
       setNeighbours(event.payload);
     });
     const welcomePeersRef = listen<String>("peers-new", async (event) => {
-      notify(`${event.payload} joined ${ticket.name}`);
+      notify(`found ${event.payload}`, "newPeer", 1000);
     });
 
     const eventsRef = listen<ChatEvent>("chat-event", async (event) => {
@@ -83,13 +81,8 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col items-center h-screen w-screen space-y-2">
-      <EventLogModal
-        eventLog={eventLog}
-        isOpen={openLog}
-        onClose={() => setOpenLog(false)}
-      />
       <div className="w-full text-center pb-1">
-        <TopBar openEventLog={() => setOpenLog(true)} neighbours={neighbours} />
+        <TopBar eventLog={eventLog} neighbours={neighbours} />
         <h1 className="text-xl font-bold">{ticket?.name}</h1>
       </div>
       <Messages
@@ -97,6 +90,7 @@ export function ChatPage() {
         onLoadMore={loadMorePreviousMessages}
         isLoadingMore={isLoadingMore}
         hasMoreOldMessages={hasMoreOldMessages}
+        peersOnline={neighbours.length > 0}
       />
     </div>
   );

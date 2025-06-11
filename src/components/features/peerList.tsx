@@ -1,29 +1,37 @@
-import { useCallback } from "react";
+import Modal from "components/elements/modal";
+import { useCallback, useState } from "react";
 import { PeerInfo, PeerStatus } from "types";
 
-const PeerInfoDropdown: React.FC<{ peers: PeerInfo[] }> = ({ peers }) => {
+const PeerInfoModal: React.FC<{ peers: PeerInfo[] }> = ({ peers }) => {
+  const [openPeers, setOpenPeers] = useState<boolean>(false);
   const online = useCallback(() => {
     return peers.filter((p) => p.status === "Online");
   }, [peers]);
 
   return (
-    <div className="dropdown dropdown-center">
-      <div tabIndex={0} role="button" className="btn btn-primary">
-        Peers: {online().length}
-      </div>
-      <ul
-        tabIndex={0}
-        className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+    <>
+      <Modal
+        isOpen={openPeers}
+        onClose={() => setOpenPeers(false)}
+        title="Peers"
       >
-        {peers.map((peer) => (
-          <li key={peer.id} className="flex items-center flex-row">
-            <PeerActivityStatus status={peer.status} />
-            {peer.nickname} -{" "}
-            {new Date(peer.lastSeen / 1000).toLocaleTimeString()}
-          </li>
-        ))}
-      </ul>
-    </div>
+        <ul tabIndex={0} className="p-1 text-sm w-full">
+          {peers.map((peer) => (
+            <li
+              key={peer.id}
+              className="flex items-center flex-row border-b border-gray-400"
+            >
+              <PeerActivityStatus status={peer.status} />
+              {peer.nickname} -{" "}
+              {new Date(peer.lastSeen / 1000).toLocaleTimeString()}
+            </li>
+          ))}
+        </ul>
+      </Modal>
+      <button className="btn btn-primary" onClick={() => setOpenPeers(true)}>
+        Peers: {online().length}
+      </button>
+    </>
   );
 };
 
@@ -44,4 +52,4 @@ const PeerActivityStatus: React.FC<{ status: PeerStatus }> = ({ status }) => {
   }
 };
 
-export default PeerInfoDropdown;
+export default PeerInfoModal;
