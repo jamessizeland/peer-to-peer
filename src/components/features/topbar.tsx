@@ -1,14 +1,19 @@
 import { leaveRoom } from "services/ipc";
-import PeerInfoDropdown from "./peerList";
+import PeerInfoModal from "./peerList";
 import TicketViewer from "./ticket";
 import { PeerInfo } from "types";
 import { CiLogout, CiMemoPad } from "react-icons/ci";
 import Button from "components/elements/button";
+import { ChatEvent } from "types/events";
+import EventLogModal from "./eventLog";
+import { useState } from "react";
 
 const TopBar: React.FC<{
-  openEventLog: () => void;
+  eventLog: ChatEvent[];
   neighbours: PeerInfo[];
-}> = ({ openEventLog, neighbours }) => {
+}> = ({ eventLog, neighbours }) => {
+  const [openLog, setOpenLog] = useState<boolean>(false);
+
   return (
     <div className="w-screen flex justify-between p-1">
       <Button
@@ -20,10 +25,15 @@ const TopBar: React.FC<{
         <CiLogout />
       </Button>
       <div className="flex flex-row space-x-2">
-        <PeerInfoDropdown peers={neighbours} />
+        <PeerInfoModal peers={neighbours} />
         <TicketViewer />
       </div>
-      <Button onClick={openEventLog}>
+      <EventLogModal
+        eventLog={eventLog}
+        isOpen={openLog}
+        onClose={() => setOpenLog(false)}
+      />
+      <Button onClick={() => setOpenLog(true)}>
         <CiMemoPad />
       </Button>
     </div>
