@@ -36,6 +36,8 @@ interface MessageProps {
   isLoadingMore: boolean;
   /** True if there are more older messages to load */
   hasMoreOldMessages: boolean;
+  /** Flag for it any peers are online */
+  peersOnline: boolean;
 }
 
 const SCROLL_TOP_THRESHOLD = 50; // pixels
@@ -45,6 +47,7 @@ const Messages: React.FC<MessageProps> = ({
   onLoadMore,
   isLoadingMore,
   hasMoreOldMessages,
+  peersOnline,
 }) => {
   const [inputValue, setInputValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -133,7 +136,6 @@ const Messages: React.FC<MessageProps> = ({
         setLocalSentMessages((prev) =>
           prev.filter((msg) => msg.displayId !== newLocalMessage.displayId)
         );
-        // alert("Failed to send message. Please try again.");
       } finally {
         setSubmitting(false);
       }
@@ -154,7 +156,9 @@ const Messages: React.FC<MessageProps> = ({
       >
         <input
           className="textarea textarea-bordered textarea-info w-full resize-none"
-          placeholder="Message"
+          placeholder={peersOnline ? "Message" : "No peers online"}
+          disabled={!peersOnline}
+          type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={(e) => {
@@ -168,7 +172,7 @@ const Messages: React.FC<MessageProps> = ({
           required
         />
         <button
-          disabled={!inputValue.trim() || submitting}
+          disabled={!inputValue.trim() || submitting || !peersOnline}
           type="submit"
           className="btn btn-primary h-auto"
         >
