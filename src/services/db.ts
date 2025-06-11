@@ -4,6 +4,7 @@ import { Message, VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
 
 // This will load the 'chat.db' database configured in the 'preload' section of tauri.conf.json
+// Migrations are handled by the Tauri backend.
 let db: Database | null = null;
 
 export async function getDb() {
@@ -50,7 +51,7 @@ export async function ensureConversationExists(
       console.log(`Conversation '${conversationId}' created.`);
     } else {
       console.log(`Conversation '${conversationId}' already exists.`);
-      // Optionally, update the name if it has changed
+      // Potential future option: Update the name if it has changed (no mechanism for changing room names yet).
       // const existing = await conn.select<Conversation[]>("SELECT * FROM conversations WHERE id = $1", [conversationId]);
       // if (existing.length > 0 && conversationName && existing[0].name !== conversationName && existing[0].name !== `Chat ${conversationId.substring(0,8)}`) {
       //   console.log(`Updating conversation '${conversationId}' name to '${conversationName}'`);
@@ -66,7 +67,7 @@ export async function ensureConversationExists(
   }
 }
 
-export function buildMessage(
+export function eventToMessage(
   eventPayload: MessageReceivedEvent,
   ticket: VisitedRoom
 ): Message {
@@ -81,6 +82,16 @@ export function buildMessage(
     content: eventPayload.text,
     created_at: eventPayload.sentTimestamp,
     sender_id: eventPayload.from,
+  };
+}
+
+export function messageToEvent(message: Message): MessageReceivedEvent {
+  return {
+    type: "messageReceived",
+    from: message.sender_id,
+    nickname: message.nickname,
+    text: message.content,
+    sentTimestamp: message.created_at,
   };
 }
 
@@ -102,6 +113,7 @@ export async function addMessage(message: Message) {
         COMMIT;
       `,
       [
+        // Parameters for the INSERT statement
         message.id,
         message.conversation_id,
         message.sender_id,
@@ -143,8 +155,7 @@ export async function getMessages(
     console.log(
       `Fetched ${messages.length} messages for conversation '${conversationId}'`
     );
-    // Messages are fetched in reverse chronological order for pagination (latest first),
-    // so you might want to reverse them back for display.
+    // Messages are fetched in reverse chronological order for pagination (latest first)
     return messages.reverse();
   } catch (error) {
     console.error(
@@ -172,7 +183,7 @@ export async function deleteConversation(
   const db = await getDb();
 
   try {
-    // You only need to delete from the parent 'conversations' table.
+    // Only need to delete from the parent 'conversations' table.
     // The database will automatically delete all child messages.
     const result = await db.execute("DELETE FROM conversations WHERE id = $1", [
       conversationId,
