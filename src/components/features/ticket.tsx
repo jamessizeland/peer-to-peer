@@ -1,5 +1,5 @@
 import { MdShare } from "react-icons/md";
-import { notifyError, notifyInfo } from "services/notifications";
+import { notify, notifyError } from "services/notifications";
 import { getLatestTicket } from "services/ipc";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
@@ -16,7 +16,7 @@ const TicketViewer: React.FC = () => {
           }
           const ticketString = ticket.ticket;
           await writeText(ticketString);
-          notifyInfo(`Room ID copied to clipboard.`);
+          notify(`🔗 Room ID copied to clipboard.`);
         }}
       >
         Invite <MdShare />

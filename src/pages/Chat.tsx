@@ -54,7 +54,7 @@ export function ChatPage() {
       setNeighbours(event.payload);
     });
     const welcomePeersRef = listen<String>("peers-new", async (event) => {
-      notify(`found ${event.payload}`, "newPeer", 1000);
+      notify(`👋 found ${event.payload}`, "newPeer", 1000);
     });
 
     const eventsRef = listen<ChatEvent>("chat-event", async (event) => {
