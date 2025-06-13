@@ -102,8 +102,14 @@ const RoomsList: React.FC = () => {
                 if (confirmed) {
                   await deleteConversation(id);
                   await deleteVisitedRoom(id);
+                  const conv = await getConversations();
                   const updatedRooms = await getVisitedRooms();
-                  setRooms(updatedRooms);
+                  setRooms(
+                    updatedRooms.map((room) => ({
+                      ...room,
+                      last_message_at: conv.get(room.id),
+                    }))
+                  );
                 }
               }}
             >
