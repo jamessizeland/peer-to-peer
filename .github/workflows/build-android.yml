@@ -8,7 +8,7 @@ on:
       - closed
 
 env:
-  APP_NAME: "peer-to-peer"
+  APP_NAME: "cups"
   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
 jobs:

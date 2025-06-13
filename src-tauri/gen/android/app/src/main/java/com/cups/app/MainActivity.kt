@@ -1,3 +1,3 @@
-package com.peer_to_peer.app
+package com.cups.app
 
 class MainActivity : TauriActivity()

@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "peer-to-peer",
+      "name": "cups",
       "dependencies": {
         "@tailwindcss/vite": "^4.1.4",
         "@tanstack/react-form": "^1.3.3",

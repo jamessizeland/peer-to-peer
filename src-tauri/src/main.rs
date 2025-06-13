@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    peer_to_peer_lib::run()
+    cups_lib::run()
 }
