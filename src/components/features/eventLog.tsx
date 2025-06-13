@@ -1,6 +1,7 @@
 import React from "react";
 import { ChatEvent } from "types/events";
 import Modal, { ModalProps } from "../elements/modal";
+import { formatDate } from "utils";
 
 const EventLogModal: React.FC<ModalProps & { eventLog: ChatEvent[] }> = ({
   isOpen,
@@ -60,7 +61,7 @@ const RenderEvent: React.FC<{ event: ChatEvent }> = ({ event }) => {
           <Property label="From">{event.from}</Property>
           <Property label="Nickname">{event.nickname}</Property>
           <Property label="Timestamp">
-            {new Date(event.sentTimestamp / 1000).toLocaleString()}
+            {formatDate(event.sentTimestamp / 1000)}
           </Property>
         </Card>
       );
@@ -71,7 +72,7 @@ const RenderEvent: React.FC<{ event: ChatEvent }> = ({ event }) => {
           <Property label="Nickname">{event.nickname}</Property>
           <Property label="Message">{event.text}</Property>
           <Property label="Timestamp">
-            {new Date(event.sentTimestamp / 1000).toLocaleString()}
+            {formatDate(event.sentTimestamp / 1000)}
           </Property>
         </Card>
       );

@@ -1,6 +1,5 @@
 // Check if the app is being run from a specified environment, or just return the running environment (dev, prod, test)
 import clsx, { ClassValue } from "clsx";
-import { default as dayjs } from "dayjs";
 import { twMerge } from "tailwind-merge";
 
 type Env = typeof process.env.NODE_ENV;
@@ -14,9 +13,9 @@ export function checkEnv(type?: Env | undefined) {
   return process.env.NODE_ENV === type;
 }
 
-/**Format a Unix timestamp to a human-readable date string */
-export const formatDate = (date: number) =>
-  dayjs.unix(date).format("MMM D, YYYY, H:mm:s");
+/**Format a Unix timestamp (seconds) to a human-readable date string */
+export const formatDate = (timestamp: number) =>
+  new Date(timestamp).toLocaleString("en-GB");
 
 /**Format a Unix timestamp to a human-readable time string */
 export const formatTime = (time_s: number) => {

@@ -11,6 +11,7 @@ import { VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
 import { useInfiniteScroll } from "hooks/useInfiniteScroll";
 import { useScrollToBottom } from "hooks/useScrollToBottom";
+import { formatDate } from "utils";
 
 interface DisplayMessage {
   /** NodeId of the sender */
@@ -250,7 +251,7 @@ const MessageArea: React.FC<{
                 </span>
               )}
               <time className="text-xs opacity-50">
-                {new Date(message.sentTimestamp / 1000).toLocaleString()}
+                {formatDate(message.sentTimestamp / 1000)}
               </time>
             </div>
             <div className="chat-bubble wrap-anywhere">{message.text}</div>
