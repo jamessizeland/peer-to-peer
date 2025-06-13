@@ -66,23 +66,26 @@ const UserEditModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
                 type="text"
                 required
                 placeholder="Username"
-                pattern="[A-Za-z][A-Za-z0-9\-]*"
+                // pattern="[A-Za-z][A-Za-z0-9\-]*"
                 minLength={3}
                 maxLength={30}
-                title="Only letters, numbers or dash"
+                // title="Only letters, numbers or dash"
               />
             </label>
-            <p className="validator-hint">
-              Must be 3 to 30 characters
-              <br />
-              containing only letters, numbers or dash
-            </p>
+            <p className="validator-hint">Must be 3 to 30 characters</p>
           </div>
           <div className="modal-action flex justify-end">
-            <button disabled={!name} type="submit" className="btn btn-primary">
+            <button
+              disabled={!name}
+              type="submit"
+              className="btn btn-primary bg-blue-950 hover:bg-primary"
+            >
               Set <FaEdit />
             </button>
-            <button className="btn btn-primary" onClick={onClose}>
+            <button
+              className="btn btn-primary bg-blue-950 hover:bg-primary"
+              onClick={onClose}
+            >
               Cancel <GrClose />
             </button>
           </div>

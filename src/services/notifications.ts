@@ -2,8 +2,8 @@ import { Id, toast, ToastOptions } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const toastConfig: ToastOptions = {
-  position: "bottom-right",
-  autoClose: 3000,
+  position: "bottom-left",
+  autoClose: 2000,
   hideProgressBar: false,
   closeOnClick: true,
   pauseOnHover: true,
@@ -19,7 +19,7 @@ export const notify = (
 ): string => {
   toastConfig.autoClose = timeout;
   toastConfig.toastId = id ? id : Date.now().toString(16);
-  toast.info(message, toastConfig);
+  toast(message, toastConfig);
   return toastConfig.toastId;
 };
 

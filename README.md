@@ -44,8 +44,10 @@ bun tauri dev
 
 ![lobby](./img/lobby.png)
 
-![newRoom](./img//newRoom.png)
+![newRoom](./img/newRoom.png)
 
 ![chat](./img/chat.png)
+
+![deleteChat](./img/deleteRoom.png)
 
 ![eventlog](./img/eventlog.png)

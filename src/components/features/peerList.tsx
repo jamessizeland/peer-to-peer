@@ -28,7 +28,10 @@ const PeerInfoModal: React.FC<{ peers: PeerInfo[] }> = ({ peers }) => {
           ))}
         </ul>
       </Modal>
-      <button className="btn btn-primary" onClick={() => setOpenPeers(true)}>
+      <button
+        className="btn btn-primary bg-blue-950 hover:bg-primary"
+        onClick={() => setOpenPeers(true)}
+      >
         Peers: {online().length}
       </button>
     </>

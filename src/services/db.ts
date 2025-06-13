@@ -1,6 +1,6 @@
 // src/db.ts
 import Database from "@tauri-apps/plugin-sql";
-import { Message, VisitedRoom } from "types";
+import { Conversation, Message, VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
 
 // This will load the 'chat.db' database configured in the 'preload' section of tauri.conf.json
@@ -162,6 +162,24 @@ export async function getMessages(
       `Error fetching messages for conversation ${conversationId}:`,
       error
     );
+    throw error; // Re-throw
+  }
+}
+
+/** Retrieve all conversations as a map of id to last_message_at. */
+export async function getConversations(): Promise<
+  Map<string, number | null | undefined>
+> {
+  const db = await getDb();
+  try {
+    const conversations = await db.select<Conversation[]>(
+      "SELECT * FROM conversations"
+    );
+    const chatMap = new Map<string, number | null | undefined>();
+    conversations.forEach((con) => chatMap.set(con.id, con.last_message_at));
+    return chatMap;
+  } catch (error) {
+    console.error("Error fetching conversations: ", error);
     throw error; // Re-throw
   }
 }

@@ -1,7 +1,7 @@
 {
-  "name": "peer-to-peer",
+  "name": "cups",
   "private": true,
-  "version": "0.4.2",
+  "version": "0.4.3",
   "type": "module",
   "repository": "https://github.com/jamessizeland/peer-to-peer",
   "scripts": {

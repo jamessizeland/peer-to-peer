@@ -1,7 +1,7 @@
 const Branding = () => {
   return (
-    <div className="my-2 text-2xl font-bold uppercase absolute w-full text-center text-primary -z-10">
-      P2P
+    <div className="text-2xl mb-1 uppercase font-bold align-middle mt-auto">
+      <span className="text-white">Cups</span>
     </div>
   );
 };

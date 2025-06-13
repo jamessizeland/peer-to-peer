@@ -11,6 +11,7 @@ import { VisitedRoom } from "types";
 import { MessageReceivedEvent } from "types/events";
 import { useInfiniteScroll } from "hooks/useInfiniteScroll";
 import { useScrollToBottom } from "hooks/useScrollToBottom";
+import { formatDate } from "utils";
 
 interface DisplayMessage {
   /** NodeId of the sender */
@@ -151,7 +152,7 @@ const Messages: React.FC<MessageProps> = ({
         hasMoreOldMessages={hasMoreOldMessages}
       />
       <form
-        className="flex flex-row space-x-2 p-2 border-t border-base-300"
+        className="flex flex-row space-x-2 p-2 border-t border-base-300 bg-blue-950"
         onSubmit={handleSendMessage}
       >
         <input
@@ -224,7 +225,7 @@ const MessageArea: React.FC<{
         </div>
       )}
       {!hasMoreOldMessages && (
-        <div className="text-center text-sm text-yellow-500 py-2 px-4">
+        <div className="text-center text-sm text-yellow-500 px-4">
           Messages are end-to-end encrypted and sent to all online peers
           directly following the{" "}
           <a
@@ -250,7 +251,7 @@ const MessageArea: React.FC<{
                 </span>
               )}
               <time className="text-xs opacity-50">
-                {new Date(message.sentTimestamp / 1000).toLocaleString()}
+                {formatDate(message.sentTimestamp / 1000)}
               </time>
             </div>
             <div className="chat-bubble wrap-anywhere">{message.text}</div>

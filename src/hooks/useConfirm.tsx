@@ -72,13 +72,21 @@ export function useConfirm(): UseConfirmReturn {
     const modalActions = (
       <>
         <button
-          className={`btn ${invertColors ? "btn-error" : "btn-primary"}`}
+          className={`btn ${
+            invertColors
+              ? "btn-error"
+              : "btn-primary bg-blue-950 hover:bg-primary"
+          }`}
           onClick={() => handleResolve(true)}
         >
           {yesText} <GrCheckmark className="ml-1" />
         </button>
         <button
-          className={`btn ${invertColors ? "btn-primary" : "btn-error"}`}
+          className={`btn ${
+            invertColors
+              ? "btn-primary bg-blue-950 hover:bg-primary"
+              : "btn-error"
+          }`}
           onClick={() => handleResolve(false)}
         >
           {noText} <GrClose className="ml-1" />

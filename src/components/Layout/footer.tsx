@@ -7,11 +7,11 @@ import pjson from "../../../package.json";
  */
 const Footer = () => {
   return (
-    <div className="w-full flex justify-center p-2 items-center">
+    <div className="w-full flex justify-center p-2 items-center bg-blue-950">
       <a
         target="_blank"
-        href="https://github.com/jamessizeland/peer-to-peer"
-        className="flex items-center border border-gray-200 rounded-lg p-2 shadow-md hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 ease-in-out space-x-3"
+        href={pjson.repository}
+        className="flex items-center border hover:border-gray-200 rounded-lg p-2 shadow-md border-primary active:bg-gray-200 transition-colors duration-200 ease-in-out space-x-3"
       >
         <p>v{pjson.version}</p>
         <IoLogoGithub className="h-7 w-auto" />

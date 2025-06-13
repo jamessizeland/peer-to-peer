@@ -39,4 +39,5 @@ export type VisitedRoom = {
   id: string;
   name: string;
   ticket: string;
+  last_message_at?: number | null; // updated from sql db
 };

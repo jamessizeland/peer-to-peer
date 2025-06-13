@@ -9,16 +9,26 @@ import {
 } from "services/ipc";
 import { notifyWarning } from "services/notifications";
 import { VisitedRoom } from "types";
-import { deleteConversation } from "services/db";
+import { deleteConversation, getConversations } from "services/db";
 import { useConfirm } from "hooks/useConfirm";
+import LobbyForm from "./lobbyForm";
+import { IoMdAddCircle } from "react-icons/io";
+import { formatDate } from "utils";
 
 const RoomsList: React.FC = () => {
   const [rooms, setRooms] = useState<VisitedRoom[]>([]);
   const [filter, setFilter] = useState<string>("");
+  const [openCreateRoom, setOpenCreateRoom] = useState<boolean>(false);
   const { confirm, ConfirmationModal } = useConfirm();
   useEffect(() => {
-    getVisitedRooms().then((rooms) => {
-      setRooms(rooms);
+    getVisitedRooms().then(async (rooms) => {
+      const conv = await getConversations();
+      setRooms(
+        rooms.map((room) => ({
+          ...room,
+          last_message_at: conv.get(room.id),
+        }))
+      );
     });
   }, []);
 
@@ -29,15 +39,28 @@ const RoomsList: React.FC = () => {
   }, [rooms, filter]);
 
   return (
-    <div className="flex flex-col flex-1 w-full px-4 pt-4 lg:w-96 min-h-0">
+    <div className="flex flex-col flex-1 w-full px-4 pt-1 min-h-0 space-y-2">
       <SearchBar setFilter={setFilter} />
-      <div className="grow space-y-2 py-2 overflow-y-scroll min-h-0">
-        {filterRooms().map(({ id, name, ticket }) => (
+      <LobbyForm
+        isOpen={openCreateRoom}
+        onClose={() => setOpenCreateRoom(false)}
+      />
+      <div className="grow space-y-2 overflow-y-scroll min-h-0">
+        <button
+          className="btn btn-primary bg-blue-950 hover:bg-primary flex-grow text-white overflow-ellipsis w-full text-center"
+          type="button"
+          onClick={() => setOpenCreateRoom(true)}
+        >
+          <>
+            Add <IoMdAddCircle />
+          </>
+        </button>
+        {filterRooms().map(({ id, name, ticket, last_message_at }) => (
           <div key={id} className="flex flex-row items-center space-x-2 w-full">
             {/* Button to enter the room */}
             <button
               type="button"
-              className="btn btn-info flex-grow justify-start btn-soft text-yellow-400 overflow-ellipsis"
+              className="btn btn-info h-14 flex-grow justify-start btn-soft text-yellow-400 overflow-ellipsis"
               onClick={async () => {
                 let nickName = await getNickname();
                 if (!nickName) {
@@ -49,12 +72,24 @@ const RoomsList: React.FC = () => {
                 }
               }}
             >
-              {name}
+              <div className="flex flex-col items-start space-y-1">
+                <span className="mr-1 font-semibold">{name}</span>
+                <span className="text-xs opacity-50 text-white">
+                  Last active:{" "}
+                  {last_message_at ? (
+                    <time className="">
+                      {formatDate(last_message_at / 1000)}
+                    </time>
+                  ) : (
+                    "Never"
+                  )}
+                </span>
+              </div>
             </button>
             {/* Delete button */}
             <button
               type="button"
-              className="btn btn-error btn-square"
+              className="btn btn-error btn-square h-14 w-14 text-xl"
               onClick={async () => {
                 const confirmed = await confirm({
                   question:
@@ -67,8 +102,14 @@ const RoomsList: React.FC = () => {
                 if (confirmed) {
                   await deleteConversation(id);
                   await deleteVisitedRoom(id);
+                  const conv = await getConversations();
                   const updatedRooms = await getVisitedRooms();
-                  setRooms(updatedRooms);
+                  setRooms(
+                    updatedRooms.map((room) => ({
+                      ...room,
+                      last_message_at: conv.get(room.id),
+                    }))
+                  );
                 }
               }}
             >

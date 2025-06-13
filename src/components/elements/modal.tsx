@@ -34,7 +34,7 @@ const Modal: React.FC<ModalProps> = ({
           // Otherwise, render the default close button
           <form method="dialog" className="modal-action flex justify-end mt-4">
             <button
-              className="btn btn-primary btn-sm sm:btn-md"
+              className="btn btn-primary bg-blue-950 hover:bg-primary"
               onClick={onClose}
             >
               Close <GrClose />
