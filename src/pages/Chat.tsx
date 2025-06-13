@@ -81,9 +81,9 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col items-center h-screen w-screen space-y-2">
-      <div className="w-full text-center pb-1">
+      <div className="w-full text-center pb-1 border-b border-blue-950 rounded-b-box">
         <TopBar eventLog={eventLog} neighbours={neighbours} />
-        <h1 className="text-xl font-bold">{ticket?.name}</h1>
+        <h1 className="text-xl font-bold py-1">{ticket?.name}</h1>
       </div>
       <Messages
         dbMessages={dbMessages}
