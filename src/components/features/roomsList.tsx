@@ -11,10 +11,13 @@ import { notifyWarning } from "services/notifications";
 import { VisitedRoom } from "types";
 import { deleteConversation } from "services/db";
 import { useConfirm } from "hooks/useConfirm";
+import LobbyForm from "./lobbyForm";
+import { IoMdAddCircle } from "react-icons/io";
 
 const RoomsList: React.FC = () => {
   const [rooms, setRooms] = useState<VisitedRoom[]>([]);
   const [filter, setFilter] = useState<string>("");
+  const [openCreateRoom, setOpenCreateRoom] = useState<boolean>(false);
   const { confirm, ConfirmationModal } = useConfirm();
   useEffect(() => {
     getVisitedRooms().then((rooms) => {
@@ -29,9 +32,22 @@ const RoomsList: React.FC = () => {
   }, [rooms, filter]);
 
   return (
-    <div className="flex flex-col flex-1 w-full px-4 pt-4 lg:w-96 min-h-0">
+    <div className="flex flex-col flex-1 w-full px-4 pt-1 min-h-0 space-y-2">
       <SearchBar setFilter={setFilter} />
-      <div className="grow space-y-2 py-2 overflow-y-scroll min-h-0">
+      <LobbyForm
+        isOpen={openCreateRoom}
+        onClose={() => setOpenCreateRoom(false)}
+      />
+      <div className="grow space-y-2 overflow-y-scroll min-h-0">
+        <button
+          className="btn btn-primary bg-blue-950 hover:bg-primary flex-grow text-white overflow-ellipsis w-full text-center"
+          type="button"
+          onClick={() => setOpenCreateRoom(true)}
+        >
+          <>
+            Add <IoMdAddCircle />
+          </>
+        </button>
         {filterRooms().map(({ id, name, ticket }) => (
           <div key={id} className="flex flex-row items-center space-x-2 w-full">
             {/* Button to enter the room */}

@@ -7,7 +7,7 @@ const TicketViewer: React.FC = () => {
   return (
     <div className="flex flex-row space-x-2 max-w-screen">
       <button
-        className="btn btn-primary"
+        className="btn btn-primary bg-blue-950 hover:bg-primary"
         onClick={async () => {
           const ticket = await getLatestTicket();
           if (ticket === null) {

@@ -151,7 +151,7 @@ const Messages: React.FC<MessageProps> = ({
         hasMoreOldMessages={hasMoreOldMessages}
       />
       <form
-        className="flex flex-row space-x-2 p-2 border-t border-base-300"
+        className="flex flex-row space-x-2 p-2 border-t border-base-300 bg-blue-950"
         onSubmit={handleSendMessage}
       >
         <input

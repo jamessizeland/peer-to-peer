@@ -15,7 +15,7 @@ const TopBar: React.FC<{
   const [openLog, setOpenLog] = useState<boolean>(false);
 
   return (
-    <div className="w-screen flex justify-between p-1">
+    <div className="w-screen flex justify-between bg-blue-950 py-1 px-1">
       <Button
         onClick={async () => {
           await leaveRoom();
