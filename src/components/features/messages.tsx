@@ -224,7 +224,7 @@ const MessageArea: React.FC<{
         </div>
       )}
       {!hasMoreOldMessages && (
-        <div className="text-center text-sm text-yellow-500 py-2 px-4">
+        <div className="text-center text-sm text-yellow-500 px-4">
           Messages are end-to-end encrypted and sent to all online peers
           directly following the{" "}
           <a
