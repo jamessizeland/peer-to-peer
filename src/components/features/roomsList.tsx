@@ -56,7 +56,7 @@ const RoomsList: React.FC = () => {
           </>
         </button>
         {filterRooms().map(({ id, name, ticket, last_message_at }) => (
-          <div key={id} className="flex flex-row items-center space-x-2 w-full">
+          <div key={id} className="flex flex-row items-center w-full">
             {/* Button to enter the room */}
             <button
               type="button"
@@ -89,13 +89,12 @@ const RoomsList: React.FC = () => {
             {/* Delete button */}
             <button
               type="button"
-              className="btn btn-error btn-square h-14 w-14 text-xl"
+              className="btn btn-square h-10 w-10 text-xl btn-ghost absolute right-6"
               onClick={async () => {
                 const confirmed = await confirm({
-                  question:
-                    "Are you sure you want to delete this room and its conversation history? This action cannot be undone.",
-                  title: "Delete Room Confirmation",
-                  yesText: "Delete",
+                  question: `Are you sure you want to delete this room's ticket and its conversation history from your device? This action cannot be undone.`,
+                  title: `Forget Room: ${name}`,
+                  yesText: "Forget",
                   noText: "Cancel",
                   invertColors: true,
                 });
