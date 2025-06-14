@@ -24,10 +24,16 @@ const TopBar: React.FC = () => {
   const [openUserEdit, setOpenUserEdit] = useState<boolean>(false);
 
   useEffect(() => {
-    getNickname().then((name) => {
-      // don't allow user to do anything else until they've set a nickname.
-      if (!name) setOpenUserEdit(true);
-    });
+    getNickname()
+      .then((name) => {
+        // don't allow user to do anything else until they've set a nickname.
+        if (!name) setOpenUserEdit(true);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch nickname:", error);
+        // Optionally, open the modal to prompt the user to set a nickname.
+        setOpenUserEdit(true);
+      });
   }, []);
 
   return (
