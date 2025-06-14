@@ -39,7 +39,8 @@ const UserEditModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
           onClose();
         }}
       >
-        <div className="modal-box flex justify-center flex-col items-center w-full p-4 border rounded-md border-secondary">
+        <div className="modal-box flex justify-center flex-col items-center w-full p-6">
+          <h3 className="text-lg font-semibold mb-2">Set Username</h3>
           <div className="h-full w-full overflow-y-auto">
             <label className="input validator">
               <svg
