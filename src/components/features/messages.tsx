@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MdSend } from "react-icons/md";
 import { addMessage, eventToMessage } from "services/db";
 import {
@@ -55,6 +55,8 @@ const Messages: React.FC<MessageProps> = ({
   const [myNodeId, setMyNodeId] = useState<string | null>(null);
   const [myNickname, setMyNickname] = useState<string | null>(null);
   const [ticket, setTicket] = useState<VisitedRoom | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const MAX_TEXTAREA_HEIGHT_PX = 150; // Approx 5-6 lines, adjust as needed
 
   // Stores messages sent by the current user locally
   const [localSentMessages, setLocalSentMessages] = useState<DisplayMessage[]>(
@@ -142,6 +144,31 @@ const Messages: React.FC<MessageProps> = ({
       }
     }
   };
+  const resizeTextarea = useCallback(() => {
+    if (textareaRef.current) {
+      const ta = textareaRef.current;
+      ta.style.height = "auto"; // Reset height to correctly calculate scrollHeight
+      const scrollHeight = ta.scrollHeight;
+
+      if (scrollHeight > MAX_TEXTAREA_HEIGHT_PX) {
+        ta.style.height = `${MAX_TEXTAREA_HEIGHT_PX}px`;
+        ta.style.overflowY = "auto"; // Show scrollbar when max height is reached
+      } else {
+        ta.style.height = `${scrollHeight}px`;
+        ta.style.overflowY = "hidden"; // Hide scrollbar if content fits
+      }
+    }
+  }, [MAX_TEXTAREA_HEIGHT_PX]);
+
+  useEffect(() => {
+    // Resize textarea when inputValue changes
+    resizeTextarea();
+  }, [inputValue, resizeTextarea]);
+
+  useEffect(() => {
+    // Initial resize on mount
+    resizeTextarea();
+  }, [resizeTextarea]);
 
   return (
     <div className="flex flex-col flex-1 w-full min-h-0">
@@ -155,11 +182,12 @@ const Messages: React.FC<MessageProps> = ({
         className="flex flex-row space-x-2 p-2 border-t border-base-300 bg-blue-950"
         onSubmit={handleSendMessage}
       >
-        <input
-          className="textarea textarea-bordered textarea-info w-full resize-none"
+        <textarea
+          ref={textareaRef}
+          className="textarea textarea-bordered textarea-info w-full"
           placeholder={peersOnline ? "Message" : "No peers online"}
           disabled={!peersOnline}
-          type="text"
+          rows={1}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={(e) => {
@@ -175,7 +203,8 @@ const Messages: React.FC<MessageProps> = ({
         <button
           disabled={!inputValue.trim() || submitting || !peersOnline}
           type="submit"
-          className="btn btn-primary h-auto"
+          className="btn bg-blue-950 hover:bg-primary h-auto"
+          aria-label="Send message"
         >
           <MdSend />
         </button>
