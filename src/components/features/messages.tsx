@@ -204,6 +204,7 @@ const Messages: React.FC<MessageProps> = ({
           disabled={!inputValue.trim() || submitting || !peersOnline}
           type="submit"
           className="btn bg-blue-950 hover:bg-primary h-auto"
+          aria-label="Send message"
         >
           <MdSend />
         </button>
